@@ -150,7 +150,6 @@
                         <th class="p-4 font-semibold text-center cursor-pointer sortable transition whitespace-nowrap col-remain" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
-                        <!-- 唯讀模式隱藏的欄位 -->
                         <th class="p-4 font-semibold text-center admin-col whitespace-nowrap col-status">期末狀態</th>
                         <th class="p-4 font-semibold text-right admin-col whitespace-nowrap col-wage">代金狀態</th>
                         <th class="p-4 font-semibold text-center whitespace-nowrap">操作</th>
@@ -322,7 +321,7 @@
                     </div>
                 </form>
 
-                <div class="flex-grow border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-gray-50" style="min-height: 250px;">
+                <div class="flex-grow border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-gray-50" style="min-hgt: 250px;">
                     <div class="overflow-y-auto grow p-0">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-100 sticky top-0 shadow-sm text-gray-600">
@@ -388,7 +387,7 @@
     let currentViewPeriodId = null;
     let currentSort = { key: 'default', direction: 'asc' };
     
-    // ⭐️ 核心安全變數：決定是否為唯讀模式 (預設為真)
+    // ⭐️ 核心安全變數：預設為唯讀模式
     window.isReadOnlyMode = true; 
 
     // 自訂 Toast 提示工具
@@ -444,11 +443,9 @@
     window.handleColumnToggle = (checkbox) => {
         const colClass = checkbox.getAttribute('data-col');
         const isChecked = checkbox.checked;
-        
         const prefs = loadColumnPreferences();
         prefs[colClass] = isChecked;
         saveColumnPreferences(prefs);
-        
         applyColumnVisibility();
     };
 
@@ -456,11 +453,9 @@
         const prefs = loadColumnPreferences();
         Object.keys(prefs).forEach(colClass => {
             const isVisible = prefs[colClass];
-            // 更新複選框狀態
             const cb = document.querySelector(`input[data-col="${colClass}"]`);
             if(cb) cb.checked = isVisible;
 
-            // 控制表格 th 及 td 顯示隱藏
             document.querySelectorAll(`.${colClass}`).forEach(el => {
                 if(isVisible) {
                     el.classList.remove('hidden');
@@ -471,7 +466,6 @@
         });
     }
 
-    // 點擊頁面其他地方關閉下拉選單
     window.addEventListener('click', (e) => {
         const dropdown = document.getElementById('columnDropdownMenu');
         const btn = dropdown?.previousElementSibling;
@@ -553,7 +547,6 @@
                 }
             });
             await batch.commit();
-            
             renderTable();
         } catch(e) {
             showToast("存檔失敗", 'error');
@@ -615,8 +608,6 @@
             statusInfo.className = "text-sm font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full inline-block mt-2";
             document.getElementById('emptyTitle').innerText = "開始建立員工資料";
             document.getElementById('emptyDesc').innerText = "點擊右上方「新增員工」建立名冊。";
-            
-            // 套用記憶的欄位篩選
             applyColumnVisibility();
         } else if (window.isReadOnlyMode && employees.length > 0) {
             adminControls.classList.add('hidden');
@@ -665,11 +656,24 @@
         const today = new Date();
         const resignDate = emp.resignDate ? new Date(emp.resignDate) : null;
         
+        const periods = [];
+        const sixMonths = new Date(hireDate); sixMonths.setMonth(sixMonths.getMonth() + 6);
+        
+        // ⭐️ 尚未滿半年（未滿 6 個月）的預備區間判定
+        if (today < sixMonths && (!resignDate || resignDate > hireDate)) {
+            let pEnd = new Date(sixMonths.getTime() - 86400000);
+            if (resignDate && pEnd > resignDate) pEnd = resignDate;
+            periods.push({
+                id: '0', name: '未滿半年 (第0年)',
+                start: formatDate(hireDate), end: formatDate(pEnd),
+                baseDays: 0
+            });
+        }
+
         let maxYears = today.getFullYear() - hireDate.getFullYear() + 2; 
         if (resignDate) maxYears = resignDate.getFullYear() - hireDate.getFullYear() + 1;
         if (maxYears < 1) maxYears = 1;
 
-        const periods = [];
         const halfYear = new Date(hireDate); halfYear.setMonth(halfYear.getMonth() + 6);
         const oneYear = new Date(hireDate); oneYear.setFullYear(oneYear.getFullYear() + 1);
         let p05End = new Date(oneYear.getTime() - 86400000);
@@ -848,7 +852,6 @@
             tbody.appendChild(tr);
         });
 
-        // 重新整理表格時也確保欄位顯示狀態正確
         if(!window.isReadOnlyMode) {
             applyColumnVisibility();
         }
