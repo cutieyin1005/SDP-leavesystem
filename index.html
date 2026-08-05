@@ -464,6 +464,11 @@
                 }
             });
         });
+
+        // ⭐️ 若為老師免登入唯讀模式，強制隱藏管理員專屬欄位（期末狀態與代金狀態）
+        if(window.isReadOnlyMode) {
+            document.querySelectorAll('.admin-col').forEach(el => el.classList.add('hidden'));
+        }
     }
 
     window.addEventListener('click', (e) => {
@@ -852,9 +857,8 @@
             tbody.appendChild(tr);
         });
 
-        if(!window.isReadOnlyMode) {
-            applyColumnVisibility();
-        }
+        // ⭐️ 每次生成完表格，無論是園長或老師模式都執行同步欄位顯隱
+        applyColumnVisibility();
     }
 
     window.openEditModal = (empId = null) => {
