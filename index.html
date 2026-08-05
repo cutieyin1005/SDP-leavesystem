@@ -103,8 +103,8 @@
                         <th class="p-4 font-semibold text-center cursor-pointer sortable transition" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
-                        <th class="p-4 font-semibold text-center">期末狀態</th>
-                        <th class="p-4 font-semibold text-right">代金狀態</th>
+                        <th class="p-4 font-semibold text-center" id="thStatus">期末狀態</th>
+                        <th class="p-4 font-semibold text-right" id="thWage">代金狀態</th>
                         <th class="p-4 font-semibold max-w-[120px]">備註</th>
                         <th class="p-4 font-semibold text-center">操作</th>
                     </tr>
@@ -203,9 +203,9 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="modalGridArea">
                 <!-- 左側：設定區 -->
-                <div class="space-y-6">
+                <div class="space-y-6" id="adminSettingsArea">
                     <div class="p-5 border border-orange-200 bg-white rounded-xl shadow-sm relative overflow-hidden" id="deferralCard">
                         <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-forward text-6xl text-orange-500"></i></div>
                         <div class="flex items-start justify-between relative z-10">
@@ -467,19 +467,35 @@
             
             // 隱藏紀錄彈窗內的編輯元素
             document.getElementById('addLeaveForm').style.display = 'none';
-            document.getElementById('monthlySalary').disabled = true;
-            document.getElementById('deferToggle').disabled = true;
-            document.getElementById('settleToggle').disabled = true;
             document.getElementById('thDeleteLeave').style.display = 'none';
+            
+            // 顯示設定區，但單獨隱藏【結算卡片】與【遞延切換開關】
+            document.getElementById('adminSettingsArea').style.display = 'block';
+            document.getElementById('modalGridArea').classList.add('lg:grid-cols-2');
+            document.getElementById('settlementCard').style.display = 'none';
+            document.getElementById('deferToggleWrapper').style.display = 'none';
+            
+            // 隱藏主表格的結算欄位
+            document.getElementById('thStatus').style.display = 'none';
+            document.getElementById('thWage').style.display = 'none';
         } else {
             document.getElementById('headerTitle').innerText = "特休紀錄與結算系統";
             document.getElementById('headerSubtitle').innerText = "雲端同步中，資料安全有保障";
             document.getElementById('btnAdd').style.display = 'flex';
             document.getElementById('btnDownload').style.display = 'flex';
             
+            // 顯示所有管理元素
             document.getElementById('addLeaveForm').style.display = 'flex';
-            document.getElementById('monthlySalary').disabled = false;
             document.getElementById('thDeleteLeave').style.display = 'table-cell';
+            
+            document.getElementById('adminSettingsArea').style.display = 'block';
+            document.getElementById('modalGridArea').classList.add('lg:grid-cols-2');
+            document.getElementById('settlementCard').style.display = 'block';
+            document.getElementById('deferToggleWrapper').style.display = 'inline-flex';
+            
+            // 顯示主表格的結算欄位
+            document.getElementById('thStatus').style.display = 'table-cell';
+            document.getElementById('thWage').style.display = 'table-cell';
         }
     }
 </script>
@@ -695,6 +711,14 @@
                 else if (current.isSettled) wageHtml = `<span class="text-green-600 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs text-green-500">已結清</div>`;
                 else wageHtml = `<span class="text-indigo-700 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs ${isExpired||isResigned ? 'text-red-500' : 'text-gray-400'}">待結算</div>`;
             }
+            
+            let adminCols = '';
+            if (!isReadOnly) {
+                adminCols = `
+                    <td class="p-4 border-b border-gray-100 text-center">${statusHtml}</td>
+                    <td class="p-4 border-b border-gray-100 text-right">${wageHtml}</td>
+                `;
+            }
 
             const tr = document.createElement('tr');
             tr.className = "hover:bg-indigo-50/50 transition bg-white";
@@ -725,8 +749,7 @@
                     <span class="text-blue-600">${current.usedDays}</span> / 
                     <span class="${current.remainDays > 0 ? 'text-green-600 font-bold text-base' : 'text-gray-400'}">${current.remainDays}</span>
                 </td>
-                <td class="p-4 border-b border-gray-100 text-center">${statusHtml}</td>
-                <td class="p-4 border-b border-gray-100 text-right">${wageHtml}</td>
+                ${adminCols}
                 <td class="p-4 border-b border-gray-100 text-sm text-gray-500 max-w-[120px] truncate cursor-help" title="${emp.remarks || ''}">${emp.remarks || '-'}</td>
                 <td class="p-4 border-b border-gray-100 text-center whitespace-nowrap">${actionBtns}</td>
             `;
@@ -858,15 +881,20 @@
         document.getElementById('statRemain').innerText = p.remainDays;
         
         const remainDetail = document.getElementById('statRemainDetail');
-        if (p.remainDays > 0 && p.remainCarryOver > 0) {
+        const isReadOnly = document.getElementById('userInfo').innerHTML.includes('唯讀');
+
+        if (isReadOnly) {
+            remainDetail.style.display = 'none';
+        } else if (p.remainDays > 0 && p.remainCarryOver > 0) {
+            remainDetail.style.display = 'block';
             remainDetail.innerText = `(強制結算剩 ${p.remainCarryOver}天 / 可遞延剩 ${p.remainBase}天)`;
             remainDetail.classList.replace('text-transparent', 'text-gray-500');
         } else {
+            remainDetail.style.display = 'block';
             remainDetail.innerText = '-';
             remainDetail.classList.replace('text-gray-500', 'text-transparent');
         }
         
-        const isReadOnly = document.getElementById('userInfo').innerHTML.includes('唯讀');
         const deferToggle = document.getElementById('deferToggle');
         const settleToggle = document.getElementById('settleToggle');
         const deferToggleWrapper = document.getElementById('deferToggleWrapper');
@@ -877,27 +905,38 @@
         settleToggle.checked = p.isSettled;
         document.getElementById('deferralDeadline').innerText = `本期最後期限：${p.deadline}`;
         
-        if (p.isResignedPeriod || isReadOnly) {
-            deferToggle.disabled = true;
-            deferToggleWrapper.classList.add('opacity-50', 'cursor-not-allowed');
+        if (isReadOnly) {
+            // 唯讀模式：顯示明確的遞延狀態文字 (開關已在 setupModeUI 被隱藏)
             if (p.isResignedPeriod) {
+                deferDesc.innerHTML = `<span class="text-red-600 font-bold">已離職。依勞基法規定，未休完之特休須全數結算。</span>`;
+                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
+            } else if (p.isDeferred) {
+                deferDesc.innerHTML = `<span class="text-orange-700 font-bold"><i class="fas fa-check-circle mr-1"></i>已啟用遞延至下一年度</span><br><span class="text-xs text-gray-500 mt-1">期限內未休畢之特休依法將轉為結算。</span>`;
+                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
+            } else {
+                deferDesc.innerHTML = `<span class="text-gray-700 font-bold"><i class="fas fa-info-circle mr-1"></i>本期尚未遞延 (應於期末結算)</span>`;
+                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full border border-orange-100";
+            }
+        } else {
+            // 管理員模式：顯示設定提示與允許操作
+            if (p.isResignedPeriod) {
+                deferToggle.disabled = true;
+                deferToggleWrapper.classList.add('opacity-50', 'cursor-not-allowed');
                 deferDesc.innerHTML = `<span class="text-red-600 font-bold">員工已離職。依勞基法規定，未休完之特休 (${p.remainDays}天) 須全數結算工資，不可遞延。</span>`;
                 document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
                 settleDaysDisplay.innerHTML = `${p.settleDays} 天 <div class="text-xs text-red-500 mt-1">(離職依法結算)</div>`;
             } else {
-                deferDesc.innerHTML = `唯讀模式無法更改設定。`;
-            }
-        } else {
-            deferToggle.disabled = false;
-            deferToggleWrapper.classList.remove('opacity-50', 'cursor-not-allowed');
-            deferDesc.innerHTML = `啟用後，本期【新增特休 <span class="font-bold text-orange-600">${p.remainBase}天</span>】將移至下期。<br><span class="text-xs text-gray-500 mt-1">*上期遞延且未休畢的 <span class="font-bold">${p.remainCarryOver} 天</span>依法轉為結算。</span>`;
-            
-            if(p.isDeferred) {
-                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
-                settleDaysDisplay.innerHTML = p.remainCarryOver > 0 ? `<span class="text-red-500">${p.settleDays} 天</span><div class="text-xs text-gray-500 mt-1">(逾期強制結算)</div>` : `0 天`;
-            } else {
-                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full border border-orange-100";
-                settleDaysDisplay.innerHTML = `${p.settleDays} 天`;
+                deferToggle.disabled = false;
+                deferToggleWrapper.classList.remove('opacity-50', 'cursor-not-allowed');
+                deferDesc.innerHTML = `啟用後，本期【新增特休 <span class="font-bold text-orange-600">${p.remainBase}天</span>】將移至下期。<br><span class="text-xs text-gray-500 mt-1">*上期遞延且未休畢的 <span class="font-bold">${p.remainCarryOver} 天</span>依法轉為結算。</span>`;
+                
+                if(p.isDeferred) {
+                    document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
+                    settleDaysDisplay.innerHTML = p.remainCarryOver > 0 ? `<span class="text-red-500">${p.settleDays} 天</span><div class="text-xs text-gray-500 mt-1">(逾期強制結算)</div>` : `0 天`;
+                } else {
+                    document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full border border-orange-100";
+                    settleDaysDisplay.innerHTML = `${p.settleDays} 天`;
+                }
             }
         }
 
