@@ -38,7 +38,6 @@
 </head>
 <body class="p-4 md:p-8 text-gray-800">
 
-<!-- Toast 提示容器 -->
 <div id="toast-container" class="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2"></div>
 
 <div class="max-w-7xl mx-auto">
@@ -52,7 +51,7 @@
             </div>
         </div>
         
-        <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+        <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto items-center">
             <!-- 老師免登入查詢區 -->
             <div class="flex items-center gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-100 flex-grow md:flex-grow-0" id="teacherSearchArea">
                 <i class="fas fa-search text-indigo-400 pl-2"></i>
@@ -70,7 +69,44 @@
             </button>
             
             <!-- 登入後的管理按鈕 -->
-            <div id="adminControls" class="hidden flex gap-3">
+            <div id="adminControls" class="hidden flex flex-wrap gap-3 items-center">
+                <!-- 欄位篩選下拉選單 -->
+                <div class="relative">
+                    <button onclick="toggleColumnDropdown()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm transition duration-200 flex items-center whitespace-nowrap">
+                        <i class="fas fa-columns mr-2"></i> 欄位篩選 <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                    </button>
+                    <div id="columnDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 space-y-2">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 border-b pb-1">選擇顯示欄位</div>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-queryCode" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>專屬 ID</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-remarks" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>備註</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-hireDate" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>到職日</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-seniority" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>當前年資</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-period" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>特休區間</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-total" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>總天數</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-remain" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>已休/剩餘</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-status" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>期末狀態</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" data-col="col-wage" onchange="handleColumnToggle(this)" class="rounded text-indigo-600 focus:ring-indigo-500"> <span>代金狀態</span>
+                        </label>
+                    </div>
+                </div>
+
                 <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200 flex items-center whitespace-nowrap">
                     <i class="fas fa-file-excel mr-2"></i> 下載總表
                 </button>
@@ -103,20 +139,20 @@
                         <th class="p-4 font-semibold cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('name')">
                             員工姓名 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-name"></i>
                         </th>
-                        <th class="p-4 font-semibold whitespace-nowrap">專屬 ID</th>
-                        <th class="p-4 font-semibold whitespace-nowrap">備註</th>
-                        <th class="p-4 font-semibold cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('hireDate')">
+                        <th class="p-4 font-semibold whitespace-nowrap col-queryCode">專屬 ID</th>
+                        <th class="p-4 font-semibold whitespace-nowrap col-remarks">備註</th>
+                        <th class="p-4 font-semibold cursor-pointer sortable transition whitespace-nowrap col-hireDate" onclick="sortEmployees('hireDate')">
                             到職日 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-hireDate"></i>
                         </th>
-                        <th class="p-4 font-semibold whitespace-nowrap">當前年資</th>
-                        <th class="p-4 font-semibold whitespace-nowrap">特休區間</th>
-                        <th class="p-4 font-semibold text-center whitespace-nowrap">總天數</th>
-                        <th class="p-4 font-semibold text-center cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('remain')">
+                        <th class="p-4 font-semibold whitespace-nowrap col-seniority">當前年資</th>
+                        <th class="p-4 font-semibold whitespace-nowrap col-period">特休區間</th>
+                        <th class="p-4 font-semibold text-center whitespace-nowrap col-total">總天數</th>
+                        <th class="p-4 font-semibold text-center cursor-pointer sortable transition whitespace-nowrap col-remain" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
                         <!-- 唯讀模式隱藏的欄位 -->
-                        <th class="p-4 font-semibold text-center admin-col whitespace-nowrap">期末狀態</th>
-                        <th class="p-4 font-semibold text-right admin-col whitespace-nowrap">代金狀態</th>
+                        <th class="p-4 font-semibold text-center admin-col whitespace-nowrap col-status">期末狀態</th>
+                        <th class="p-4 font-semibold text-right admin-col whitespace-nowrap col-wage">代金狀態</th>
                         <th class="p-4 font-semibold text-center whitespace-nowrap">操作</th>
                     </tr>
                 </thead>
@@ -372,7 +408,79 @@
         }, 3000);
     }
 
-    // --- Firebase Auth 登入管理 (採用 Popup 彈出視窗) ---
+    // --- 欄位篩選與記憶功能 ---
+    const defaultColumnState = {
+        'col-queryCode': true,
+        'col-remarks': true,
+        'col-hireDate': true,
+        'col-seniority': true,
+        'col-period': true,
+        'col-total': true,
+        'col-remain': true,
+        'col-status': true,
+        'col-wage': true
+    };
+
+    function loadColumnPreferences() {
+        try {
+            const saved = localStorage.getItem('director_column_preferences');
+            return saved ? JSON.parse(saved) : defaultColumnState;
+        } catch(e) {
+            return defaultColumnState;
+        }
+    }
+
+    function saveColumnPreferences(prefs) {
+        try {
+            localStorage.setItem('director_column_preferences', JSON.stringify(prefs));
+        } catch(e) {}
+    }
+
+    window.toggleColumnDropdown = () => {
+        const menu = document.getElementById('columnDropdownMenu');
+        menu.classList.toggle('hidden');
+    };
+
+    window.handleColumnToggle = (checkbox) => {
+        const colClass = checkbox.getAttribute('data-col');
+        const isChecked = checkbox.checked;
+        
+        const prefs = loadColumnPreferences();
+        prefs[colClass] = isChecked;
+        saveColumnPreferences(prefs);
+        
+        applyColumnVisibility();
+    };
+
+    function applyColumnVisibility() {
+        const prefs = loadColumnPreferences();
+        Object.keys(prefs).forEach(colClass => {
+            const isVisible = prefs[colClass];
+            // 更新複選框狀態
+            const cb = document.querySelector(`input[data-col="${colClass}"]`);
+            if(cb) cb.checked = isVisible;
+
+            // 控制表格 th 及 td 顯示隱藏
+            document.querySelectorAll(`.${colClass}`).forEach(el => {
+                if(isVisible) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        });
+    }
+
+    // 點擊頁面其他地方關閉下拉選單
+    window.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('columnDropdownMenu');
+        const btn = dropdown?.previousElementSibling;
+        if(dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // --- Firebase Auth 登入管理 (彈出視窗模式) ---
     window.loginWithGoogle = () => {
         setLoading(true, "開啟 Google 登入中...");
         signInWithPopup(auth, provider)
@@ -507,6 +615,9 @@
             statusInfo.className = "text-sm font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full inline-block mt-2";
             document.getElementById('emptyTitle').innerText = "開始建立員工資料";
             document.getElementById('emptyDesc').innerText = "點擊右上方「新增員工」建立名冊。";
+            
+            // 套用記憶的欄位篩選
+            applyColumnVisibility();
         } else if (window.isReadOnlyMode && employees.length > 0) {
             adminControls.classList.add('hidden');
             loginBtn.classList.add('hidden');
@@ -717,25 +828,30 @@
                 <td class="p-4 border-b border-gray-100 font-bold text-gray-800 whitespace-nowrap">
                     ${emp.name} ${isResigned ? `<div class="text-xs text-red-500 mt-1"><i class="fas fa-ban"></i> 已離職</div>` : ''}
                 </td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 font-mono text-sm whitespace-nowrap">${emp.queryCode || '<span class="text-gray-300">未設定</span>'}</td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap">${emp.remarks || '<span class="text-gray-300">-</span>'}</td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap">${emp.hireDate}</td>
-                <td class="p-4 border-b border-gray-100 text-indigo-700 font-medium whitespace-nowrap">${current.name}</td>
-                <td class="p-4 border-b border-gray-100 text-sm whitespace-nowrap">
+                <td class="p-4 border-b border-gray-100 text-gray-600 font-mono text-sm whitespace-nowrap col-queryCode">${emp.queryCode || '<span class="text-gray-300">未設定</span>'}</td>
+                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap col-remarks">${emp.remarks || '<span class="text-gray-300">-</span>'}</td>
+                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap col-hireDate">${emp.hireDate}</td>
+                <td class="p-4 border-b border-gray-100 text-indigo-700 font-medium whitespace-nowrap col-seniority">${current.name}</td>
+                <td class="p-4 border-b border-gray-100 text-sm whitespace-nowrap col-period">
                     <div class="text-gray-800">${current.start} ~ ${current.end}</div>
                     <div class="text-xs ${isExpired||isResigned ? 'text-red-500 font-bold' : 'text-gray-500'} mt-1">期限: ${current.deadline}</div>
                 </td>
-                <td class="p-4 border-b border-gray-100 text-center font-bold text-gray-700 text-lg whitespace-nowrap">${current.totalAvailable}</td>
-                <td class="p-4 border-b border-gray-100 text-center text-sm whitespace-nowrap">
+                <td class="p-4 border-b border-gray-100 text-center font-bold text-gray-700 text-lg whitespace-nowrap col-total">${current.totalAvailable}</td>
+                <td class="p-4 border-b border-gray-100 text-center text-sm whitespace-nowrap col-remain">
                     <span class="text-blue-600">${current.usedDays}</span> / 
                     <span class="${current.remainDays > 0 ? 'text-green-600 font-bold text-lg' : 'text-gray-400'}">${current.remainDays}</span>
                 </td>
-                <td class="p-4 border-b border-gray-100 text-center admin-col whitespace-nowrap ${window.isReadOnlyMode?'hidden':''}">${statusHtml}</td>
-                <td class="p-4 border-b border-gray-100 text-right admin-col whitespace-nowrap ${window.isReadOnlyMode?'hidden':''}">${wageHtml}</td>
+                <td class="p-4 border-b border-gray-100 text-center admin-col whitespace-nowrap col-status ${window.isReadOnlyMode?'hidden':''}">${statusHtml}</td>
+                <td class="p-4 border-b border-gray-100 text-right admin-col whitespace-nowrap col-wage ${window.isReadOnlyMode?'hidden':''}">${wageHtml}</td>
                 <td class="p-4 border-b border-gray-100 text-center whitespace-nowrap">${actionBtns}</td>
             `;
             tbody.appendChild(tr);
         });
+
+        // 重新整理表格時也確保欄位顯示狀態正確
+        if(!window.isReadOnlyMode) {
+            applyColumnVisibility();
+        }
     }
 
     window.openEditModal = (empId = null) => {
