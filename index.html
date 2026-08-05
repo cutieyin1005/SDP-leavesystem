@@ -97,26 +97,27 @@
                 <div class="text-indigo-900 font-bold" id="loadingText">載入資料中...</div>
             </div>
 
-            <table class="w-full text-left border-collapse min-w-[1000px]" id="employeeTable">
+            <table class="w-full text-left border-collapse min-w-[1100px]" id="employeeTable">
                 <thead>
                     <tr class="bg-indigo-50 text-indigo-900 border-b border-indigo-100 select-none">
-                        <th class="p-4 font-semibold cursor-pointer sortable transition" onclick="sortEmployees('name')">
+                        <th class="p-4 font-semibold cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('name')">
                             員工姓名 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-name"></i>
                         </th>
-                        <th class="p-4 font-semibold">專屬 ID</th>
-                        <th class="p-4 font-semibold">備註</th>
-                        <th class="p-4 font-semibold">到職日</th>
-                        <th class="p-4 font-semibold">當前年資</th>
-                        <th class="p-4 font-semibold">特休區間</th>
-                        <th class="p-4 font-semibold text-center">總天數</th>
-                        <th class="p-4 font-semibold text-center cursor-pointer sortable transition" onclick="sortEmployees('remain')">
+                        <th class="p-4 font-semibold whitespace-nowrap">專屬 ID</th>
+                        <th class="p-4 font-semibold whitespace-nowrap">備註</th>
+                        <th class="p-4 font-semibold cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('hireDate')">
+                            到職日 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-hireDate"></i>
+                        </th>
+                        <th class="p-4 font-semibold whitespace-nowrap">當前年資</th>
+                        <th class="p-4 font-semibold whitespace-nowrap">特休區間</th>
+                        <th class="p-4 font-semibold text-center whitespace-nowrap">總天數</th>
+                        <th class="p-4 font-semibold text-center cursor-pointer sortable transition whitespace-nowrap" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
                         <!-- 唯讀模式隱藏的欄位 -->
-                        <th class="p-4 font-semibold text-center admin-col">期末狀態</th>
-                        <th class="p-4 font-semibold text-right admin-col">代金狀態</th>
-                        
-                        <th class="p-4 font-semibold text-center">操作</th>
+                        <th class="p-4 font-semibold text-center admin-col whitespace-nowrap">期末狀態</th>
+                        <th class="p-4 font-semibold text-right admin-col whitespace-nowrap">代金狀態</th>
+                        <th class="p-4 font-semibold text-center whitespace-nowrap">操作</th>
                     </tr>
                 </thead>
                 <tbody id="employeeList" class="divide-y divide-gray-100 bg-white"></tbody>
@@ -325,7 +326,7 @@
 </div>
 
 <script type="module">
-    // 🔥 將這裡換成你從 Firebase 後台取得的 Config 🔥
+    // 🔥 請在此處填入你的 Firebase 設定檔 🔥
     const firebaseConfig = {
         apiKey: "AIzaSyCPNcw6zmIUzhkgtK_9AuJGPJcoeWnAIuk",
         authDomain: "sdp-leavesystem.firebaseapp.com",
@@ -377,7 +378,7 @@
         }, 3000);
     }
 
-    // --- Firebase Auth 登入管理 (改用 redirect 避免彈出視窗阻擋) ---
+    // --- Firebase Auth 登入管理 (採用 redirect 避免彈出視窗阻擋) ---
     window.loginWithGoogle = () => {
         setLoading(true, "導向 Google 登入中...");
         signInWithRedirect(auth, provider).catch(error => {
@@ -651,7 +652,7 @@
         const table = document.getElementById('employeeTable');
         tbody.innerHTML = '';
         
-        ['name', 'remain'].forEach(k => {
+        ['name', 'hireDate', 'remain'].forEach(k => {
             const i = document.getElementById(`sortIcon-${k}`);
             if(i) i.className = currentSort.key === k ? `fas fa-sort-${currentSort.direction==='asc'?'up':'down'} ml-1 text-indigo-600` : 'fas fa-sort ml-1 text-indigo-300';
         });
@@ -673,8 +674,16 @@
                 let res = a.emp.name.localeCompare(b.emp.name, 'zh-TW');
                 return currentSort.direction === 'asc' ? res : -res;
             });
+        } else if (currentSort.key === 'hireDate') {
+            displayData.sort((a, b) => {
+                let res = new Date(a.emp.hireDate) - new Date(b.emp.hireDate);
+                return currentSort.direction === 'asc' ? res : -res;
+            });
         } else if (currentSort.key === 'remain') {
-            displayData.sort((a, b) => currentSort.direction === 'asc' ? a.current.remainDays - b.current.remainDays : b.current.remainDays - a.current.remainDays);
+            displayData.sort((a, b) => {
+                let res = a.current.remainDays - b.current.remainDays;
+                return currentSort.direction === 'asc' ? res : -res;
+            });
         }
 
         displayData.forEach(data => {
@@ -704,25 +713,25 @@
             const tr = document.createElement('tr');
             tr.className = "hover:bg-indigo-50/30 transition";
             tr.innerHTML = `
-                <td class="p-4 border-b border-gray-100 font-bold text-gray-800">
+                <td class="p-4 border-b border-gray-100 font-bold text-gray-800 whitespace-nowrap">
                     ${emp.name} ${isResigned ? `<div class="text-xs text-red-500 mt-1"><i class="fas fa-ban"></i> 已離職</div>` : ''}
                 </td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 font-mono text-sm">${emp.queryCode || '<span class="text-gray-300">未設定</span>'}</td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm">${emp.remarks || '<span class="text-gray-300">-</span>'}</td>
-                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm">${emp.hireDate}</td>
-                <td class="p-4 border-b border-gray-100 text-indigo-700 font-medium">${current.name}</td>
-                <td class="p-4 border-b border-gray-100 text-sm">
+                <td class="p-4 border-b border-gray-100 text-gray-600 font-mono text-sm whitespace-nowrap">${emp.queryCode || '<span class="text-gray-300">未設定</span>'}</td>
+                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap">${emp.remarks || '<span class="text-gray-300">-</span>'}</td>
+                <td class="p-4 border-b border-gray-100 text-gray-600 text-sm whitespace-nowrap">${emp.hireDate}</td>
+                <td class="p-4 border-b border-gray-100 text-indigo-700 font-medium whitespace-nowrap">${current.name}</td>
+                <td class="p-4 border-b border-gray-100 text-sm whitespace-nowrap">
                     <div class="text-gray-800">${current.start} ~ ${current.end}</div>
                     <div class="text-xs ${isExpired||isResigned ? 'text-red-500 font-bold' : 'text-gray-500'} mt-1">期限: ${current.deadline}</div>
                 </td>
-                <td class="p-4 border-b border-gray-100 text-center font-bold text-gray-700 text-lg">${current.totalAvailable}</td>
-                <td class="p-4 border-b border-gray-100 text-center text-sm">
+                <td class="p-4 border-b border-gray-100 text-center font-bold text-gray-700 text-lg whitespace-nowrap">${current.totalAvailable}</td>
+                <td class="p-4 border-b border-gray-100 text-center text-sm whitespace-nowrap">
                     <span class="text-blue-600">${current.usedDays}</span> / 
                     <span class="${current.remainDays > 0 ? 'text-green-600 font-bold text-lg' : 'text-gray-400'}">${current.remainDays}</span>
                 </td>
-                <td class="p-4 border-b border-gray-100 text-center admin-col ${window.isReadOnlyMode?'hidden':''}">${statusHtml}</td>
-                <td class="p-4 border-b border-gray-100 text-right admin-col ${window.isReadOnlyMode?'hidden':''}">${wageHtml}</td>
-                <td class="p-4 border-b border-gray-100 text-center">${actionBtns}</td>
+                <td class="p-4 border-b border-gray-100 text-center admin-col whitespace-nowrap ${window.isReadOnlyMode?'hidden':''}">${statusHtml}</td>
+                <td class="p-4 border-b border-gray-100 text-right admin-col whitespace-nowrap ${window.isReadOnlyMode?'hidden':''}">${wageHtml}</td>
+                <td class="p-4 border-b border-gray-100 text-center whitespace-nowrap">${actionBtns}</td>
             `;
             tbody.appendChild(tr);
         });
