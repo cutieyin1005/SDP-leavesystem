@@ -371,7 +371,12 @@
         setLoading(true, "登入中...");
         signInWithPopup(auth, provider).catch(error => {
             console.error("登入錯誤:", error);
-            showToast(`登入失敗: ${error.message}`, 'error');
+            if (error.code === 'auth/unauthorized-domain') {
+                showToast(`登入失敗：請將此網域加入 Firebase 授權網域白名單！`, 'error');
+                alert("【重要提示】\n您正在使用的預覽環境網域未授權。\n請到 Firebase 後台 -> Authentication -> 設定 -> 已授權網域\n新增網域： scf.usercontent.goog");
+            } else {
+                showToast(`登入失敗: ${error.message}`, 'error');
+            }
             setLoading(false);
         });
     };
@@ -539,7 +544,12 @@
     }
 
     function getPeriods(emp) {
+        // 【防呆機制】：過濾掉損壞或不完整的測試資料
+        if (!emp || !emp.hireDate) return []; 
+        
         const hireDate = new Date(emp.hireDate);
+        if (isNaN(hireDate)) return []; // 確保日期格式正確
+        
         const today = new Date();
         const resignDate = emp.resignDate ? new Date(emp.resignDate) : null;
         
@@ -652,11 +662,13 @@
         }
         emptyState.classList.add('hidden'); table.classList.remove('hidden');
 
+        // 【防呆機制】：過濾掉無效資料
         let displayData = employees.map(emp => {
+            if (!emp || !emp.hireDate) return null;
             const periods = getPeriods(emp);
             const current = getCurrentPeriod(periods, emp.resignDate);
             return { emp, current };
-        }).filter(d => d.current != null);
+        }).filter(d => d !== null && d.current != null);
 
         if (currentSort.key === 'name') {
             displayData.sort((a, b) => {
