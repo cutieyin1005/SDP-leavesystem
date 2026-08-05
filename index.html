@@ -1042,10 +1042,11 @@
     window.downloadExcel = () => {
         if (employees.length === 0) { showToast("沒有資料可下載！", 'error'); return; }
         
-        let csv = "\uFEFF員工姓名,在職狀態,離職日,到職日,查詢ID,特休年度,特休區間(起),特休區間(迄),最後期限,總天數,已休,剩餘天數,遞延/結算狀態,應結算天數\n";
+        let csv = "\uFEFF員工姓名,在職狀態,離職日,到職日,查詢ID,備註說明,特休年度,特休區間(起),特休區間(迄),最後期限,總天數,已休,剩餘天數,遞延/結算狀態,應結算天數\n";
         employees.forEach(emp => {
             const periods = getPeriods(emp);
             let status = emp.resignDate ? '已離職' : '在職';
+            const safeRemarks = emp.remarks ? emp.remarks.replace(/"/g, '""') : '';
             
             periods.forEach(p => {
                 let deferStatus = '';
@@ -1055,7 +1056,7 @@
                 else deferStatus = '未遞延(應結算)';
                 
                 const row = [
-                    `"${emp.name}"`, `"${status}"`, `"${emp.resignDate || ''}"`, `"${emp.hireDate}"`, `"${emp.queryCode||''}"`,
+                    `"${emp.name}"`, `"${status}"`, `"${emp.resignDate || ''}"`, `"${emp.hireDate}"`, `"${emp.queryCode||''}"`, `"${safeRemarks}"`,
                     `"${p.name}"`, `"${p.start}"`, `"${p.end}"`, `"${p.deadline}"`,
                     p.totalAvailable, p.usedDays, p.remainDays, `"${deferStatus}"`, p.settleDays
                 ];
