@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>園所特休雲端管理系統</title>
+    <title>員工特休紀錄系統 (雲端同步版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -22,71 +22,72 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         th.sortable:hover { background-color: #e0e7ff; }
-        
-        /* 隱藏未授權時的 UI */
-        #appMain, #loginScreen { display: none; }
     </style>
 </head>
-<body class="p-4 md:p-8 text-gray-800">
+<body class="text-gray-800">
 
-<!-- 登入與查詢畫面 -->
-<div id="loginScreen" class="max-w-4xl mx-auto mt-10 flex flex-col md:flex-row gap-6 items-stretch">
-    
-    <!-- 園長登入區 -->
-    <div class="flex-1 bg-white p-8 rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center text-center">
-        <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-            <i class="fas fa-user-shield text-2xl text-indigo-500"></i>
-        </div>
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">園長管理後台</h1>
-        <p class="text-gray-500 mb-6 text-sm">請使用您的 Google 帳號登入以管理全園特休資料。</p>
-        <button onclick="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition duration-200 flex items-center justify-center w-full max-w-xs">
-            <i class="fab fa-google mr-2"></i> 使用 Google 登入
-        </button>
-    </div>
-
-    <!-- 老師免登入查詢區 -->
-    <div class="flex-1 bg-white p-8 rounded-2xl shadow-lg border border-teal-100 flex flex-col items-center justify-center text-center">
-        <div class="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
-            <i class="fas fa-search text-2xl text-teal-400"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">老師特休查詢</h2>
-        <p class="text-gray-500 mb-6 text-sm">請輸入您的「專屬查詢代碼」查看紀錄。</p>
-        <div class="flex flex-col gap-3 w-full max-w-xs">
-            <input type="text" id="queryCodeInput" placeholder="請輸入老師的帳號或代碼" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-center uppercase tracking-widest font-bold">
-            <button onclick="queryLeaveByCode()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition duration-200 w-full">
-                免登入查詢
+<!-- 登入畫面 -->
+<div id="loginScreen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- 左側：管理員(園長)登入 -->
+        <div class="md:w-1/2 p-8 md:p-12 bg-indigo-50 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-indigo-100">
+            <div class="w-20 h-20 bg-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                <i class="fas fa-user-shield text-3xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-indigo-900 mb-2">管理員 / 園長登入</h2>
+            <p class="text-gray-600 mb-8 text-sm">請使用已授權的 Google 帳號登入系統，以進行建立與管理特休紀錄。</p>
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 font-bold hover:bg-gray-50 transition shadow-sm">
+                <span>使用 Google 帳號登入</span>
             </button>
-            <div id="queryErrorMsg" class="text-red-500 text-sm hidden mt-1 font-medium"></div>
         </div>
+
+        <!-- 右側：老師免登入查詢 -->
+        <div class="md:w-1/2 p-8 md:p-12 bg-white flex flex-col justify-center items-center text-center">
+            <div class="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                <i class="fas fa-search text-3xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-teal-900 mb-2">老師查詢專區</h2>
+            <p class="text-gray-600 mb-8 text-sm">請輸入園長發送給您的「專屬查詢 ID」，即可查看您的個人特休紀錄。</p>
+            
+            <div class="w-full relative">
+                <input type="text" id="queryCodeInput" placeholder="請輸入您的專屬 ID (如: teacher01)" class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-center font-bold tracking-wide text-gray-700 placeholder-gray-400">
+                <button onclick="searchTeacherData()" class="absolute right-2 top-2 bottom-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md px-4 transition">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- 主系統畫面 (登入後或查詢後顯示) -->
-<div id="appMain" class="max-w-7xl mx-auto">
-    <header class="mb-8 flex justify-between items-center flex-wrap gap-4">
+<!-- 系統主畫面 -->
+<div id="appMain" class="hidden p-4 md:p-8 max-w-7xl mx-auto">
+    <header class="mb-8 flex justify-between items-end flex-wrap gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-indigo-900 flex items-center">
+            <h1 class="text-3xl font-bold text-indigo-900 flex items-center" id="headerTitle">
                 <i class="fas fa-calendar-check mr-3 text-indigo-600"></i>
-                <span id="headerTitle">特休紀錄與結算系統</span>
+                特休紀錄與結算系統
             </h1>
-            <p class="text-gray-500 mt-2" id="headerSubtitle">雲端同步中，資料安全有保障</p>
+            <p class="text-gray-500 mt-2" id="headerSubtitle">支援點擊標題排序、歷史查詢、離職結算與雲端同步</p>
         </div>
-        <div class="flex gap-3 items-center">
-            <span id="userInfo" class="text-sm font-medium text-gray-600 mr-2 bg-white px-3 py-1.5 rounded-full shadow-sm"></span>
-            
-            <button id="btnDownload" onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200 flex items-center whitespace-nowrap">
+        <div class="flex gap-3 items-center flex-wrap">
+            <div id="userInfo" class="text-sm font-medium text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
+                <!-- 登入資訊將顯示於此 -->
+            </div>
+            <button onclick="downloadExcel()" id="btnExport" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow transition flex items-center whitespace-nowrap">
                 <i class="fas fa-file-excel mr-2"></i> 匯出 Excel
             </button>
-            <button id="btnAdd" onclick="openEditModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200 flex items-center whitespace-nowrap">
+            <button onclick="openEditModal()" id="btnAdd" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition flex items-center whitespace-nowrap">
                 <i class="fas fa-plus mr-2"></i> 新增員工
             </button>
-            <button id="btnLogout" onclick="logout()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow transition duration-200 flex items-center whitespace-nowrap">
-                登出 / 返回首頁
+            <button onclick="logout()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm border border-gray-300 transition flex items-center whitespace-nowrap">
+                <i class="fas fa-sign-out-alt mr-2"></i> 登出
             </button>
         </div>
     </header>
 
-    <main class="glass-panel rounded-xl overflow-hidden mb-8 shadow-md">
+    <main class="glass-panel rounded-xl overflow-hidden mb-8">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[1000px]" id="employeeTable">
                 <thead>
@@ -103,13 +104,17 @@
                         <th class="p-4 font-semibold text-center cursor-pointer sortable transition" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
-                        <th class="p-4 font-semibold text-center" id="thStatus">期末狀態</th>
-                        <th class="p-4 font-semibold text-right" id="thWage">代金狀態</th>
+                        <!-- 這兩欄在唯讀模式下會隱藏 -->
+                        <th class="p-4 font-semibold text-center admin-only">期末狀態</th>
+                        <th class="p-4 font-semibold text-right admin-only">代金狀態</th>
+                        
                         <th class="p-4 font-semibold max-w-[120px]">備註</th>
                         <th class="p-4 font-semibold text-center">操作</th>
                     </tr>
                 </thead>
-                <tbody id="employeeList" class="divide-y divide-gray-100"></tbody>
+                <tbody id="employeeList" class="divide-y divide-gray-100">
+                    <!-- 動態產生 -->
+                </tbody>
             </table>
             
             <div id="emptyState" class="hidden p-12 text-center text-gray-500">
@@ -124,7 +129,7 @@
 </div>
 
 <!-- 新增/編輯員工 Modal -->
-<div id="employeeModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+<div id="employeeModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
         <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
             <h2 id="modalTitle" class="text-xl font-bold">員工基本資料</h2>
@@ -136,53 +141,82 @@
             <input type="hidden" id="empId">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">員工姓名 <span class="text-red-500">*</span></label>
-                <input type="text" id="empName" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="empName" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">老師查詢代碼 (自訂 ID)</label>
-                <input type="text" id="empQueryCode" placeholder="例如: teacher01 或身分證字號" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono uppercase">
-                <p class="text-xs text-gray-500 mt-1">老師輸入此代碼可免登入查詢自己的特休紀錄(不分大小寫)。</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1">老師專屬查詢代碼 (自訂ID) <span class="text-red-500">*</span></label>
+                <input type="text" id="empPublicCode" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="例如：teacher01">
+                <p class="text-xs text-gray-500 mt-1">老師可於首頁輸入此代碼查看個人特休，請勿與他人重複。</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">到職日 <span class="text-red-500">*</span></label>
-                <input type="date" id="empHireDate" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <input type="date" id="empHireDate" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <div class="p-4 bg-red-50 rounded-lg border border-red-100 mt-2">
                 <label class="block text-sm font-bold text-red-700 mb-1"><i class="fas fa-user-slash mr-1"></i> 離職日 (若在職請留空)</label>
-                <input type="date" id="empResignDate" class="w-full p-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 bg-white">
+                <input type="date" id="empResignDate" class="w-full p-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white">
                 <p class="text-xs text-red-600 mt-1">設定離職日後，未休完之特休將強制轉為代金結算。</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">備註說明</label>
-                <textarea id="empRemarks" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"></textarea>
+                <textarea id="empRemarks" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="經歷特殊年資併計等..."></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
-                <button type="button" onclick="closeModal('employeeModal')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium">取消</button>
-                <button type="submit" class="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow font-medium">儲存資料</button>
+                <button type="button" onclick="closeModal('employeeModal')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">取消</button>
+                <button type="submit" class="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow font-medium">儲存資料</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- 特休紀錄與結算 Modal (唯讀與編輯共用) -->
+<!-- 確認刪除 Modal -->
+<div id="confirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-[70] p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">確定要刪除嗎？</h3>
+        <p class="text-gray-600 mb-6 text-sm">此操作將移除該員工的所有紀錄且無法還原。</p>
+        <div class="flex justify-center gap-3">
+            <button onclick="closeModal('confirmModal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium">取消</button>
+            <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow">確定刪除</button>
+        </div>
+    </div>
+</div>
+
+<!-- 特休紀錄與結算 Modal -->
 <div id="recordModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden transform transition-all flex flex-col max-h-[95vh]">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all flex flex-col max-h-[95vh]">
+        <!-- 標頭 -->
         <div class="bg-teal-600 p-4 text-white flex justify-between items-center shrink-0">
-            <h2 class="text-xl font-bold flex items-center" id="recordModalName"><i class="fas fa-file-signature mr-2 text-teal-200"></i> 特休紀錄</h2>
-            <button onclick="closeModal('recordModal')" class="text-teal-200 hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+            <div>
+                <h2 class="text-xl font-bold flex items-center" id="recordModalName">
+                    <i class="fas fa-file-signature mr-2 text-teal-200"></i> 特休紀錄與結算
+                </h2>
+            </div>
+            <button onclick="closeModal('recordModal')" class="text-teal-200 hover:text-white transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
         </div>
         
+        <!-- 年度選擇器 -->
         <div class="bg-teal-50 px-6 py-3 border-b border-teal-100 flex flex-wrap justify-between items-center shrink-0 gap-3">
-            <label class="font-bold text-teal-900 flex items-center whitespace-nowrap"><i class="fas fa-calendar-alt mr-2 text-teal-600"></i> 選擇檢視年度：</label>
-            <select id="periodSelector" onchange="changeViewPeriod()" class="p-2 border border-teal-300 rounded-lg text-sm bg-white shadow-sm focus:ring-2 focus:ring-teal-500 grow max-w-sm font-medium text-gray-700"></select>
+            <label class="font-bold text-teal-900 flex items-center whitespace-nowrap">
+                <i class="fas fa-calendar-alt mr-2 text-teal-600"></i> 選擇檢視年度：
+            </label>
+            <select id="periodSelector" onchange="changeViewPeriod()" class="p-2 border border-teal-300 rounded-lg text-sm bg-white shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 grow max-w-sm font-medium text-gray-700"></select>
         </div>
 
         <div class="p-6 overflow-y-auto grow bg-gray-50">
             <div class="mb-4 text-sm text-gray-600 flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div><i class="fas fa-info-circle text-teal-500 mr-2 text-lg align-middle"></i><span id="recordModalPeriod"></span></div>
-                <div id="resignBadge" class="hidden px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold border border-red-200">已離職</div>
+                <div>
+                    <i class="fas fa-info-circle text-teal-500 mr-2 text-lg align-middle"></i>
+                    <span id="recordModalPeriod"></span>
+                </div>
+                <div id="resignBadge" class="hidden px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold border border-red-200">
+                    已離職
+                </div>
             </div>
 
+            <!-- 狀態概覽 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-center relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gray-400"></div>
@@ -194,6 +228,7 @@
                     <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                     <div class="text-sm text-blue-500 mb-1 font-medium">已休天數</div>
                     <div class="text-3xl font-bold text-blue-600" id="statUsed">0</div>
+                    <div class="text-xs text-gray-400 mt-1 h-4">(優先扣除遞延特休)</div>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-green-100 shadow-sm text-center relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
@@ -203,9 +238,12 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="modalGridArea">
-                <!-- 左側：設定區 -->
-                <div class="space-y-6" id="adminSettingsArea">
+            <!-- 下方區域：動態排版 (管理員分兩半，老師放大右半) -->
+            <div class="flex flex-col lg:flex-row gap-6">
+                
+                <!-- 左側：設定區 (唯讀模式下整塊隱藏薪水，僅留遞延文字) -->
+                <div class="w-full lg:w-1/2 flex flex-col space-y-6" id="settingsColumn">
+                    <!-- 遞延設定 -->
                     <div class="p-5 border border-orange-200 bg-white rounded-xl shadow-sm relative overflow-hidden" id="deferralCard">
                         <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-forward text-6xl text-orange-500"></i></div>
                         <div class="flex items-start justify-between relative z-10">
@@ -216,19 +254,28 @@
                                     <i class="fas fa-clock mr-1.5"></i> <span id="deferralDeadline"></span>
                                 </div>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer mt-1 shrink-0" id="deferToggleWrapper">
-                                <input type="checkbox" id="deferToggle" class="sr-only peer" onchange="toggleDeferral()">
-                                <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500"></div>
-                            </label>
+                            
+                            <!-- 管理員開關 / 老師狀態文字切換區 -->
+                            <div class="shrink-0 mt-1" id="deferToggleContainer">
+                                <label class="relative inline-flex items-center cursor-pointer" id="deferToggleWrapper">
+                                    <input type="checkbox" id="deferToggle" class="sr-only peer" onchange="toggleDeferral()">
+                                    <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500 shadow-inner"></div>
+                                </label>
+                                <!-- 唯讀模式的文字顯示 -->
+                                <span id="deferReadOnlyText" class="hidden text-sm font-bold px-3 py-1 rounded-full border"></span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="p-5 border border-indigo-200 bg-white rounded-xl shadow-sm relative" id="settlementCard">
+                    <!-- 結算與薪資設定 (唯讀模式直接隱藏) -->
+                    <div class="p-5 border border-indigo-200 bg-white rounded-xl shadow-sm relative admin-only" id="settlementCard">
                         <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
-                            <h3 class="font-bold text-gray-800 text-lg flex items-center"><i class="fas fa-coins text-indigo-500 mr-2"></i> 期末結算紀錄</h3>
+                            <h3 class="font-bold text-gray-800 text-lg flex items-center">
+                                <i class="fas fa-coins text-indigo-500 mr-2"></i> 期末結算紀錄
+                            </h3>
                             <label class="relative inline-flex items-center cursor-pointer" id="settleToggleWrapper">
                                 <input type="checkbox" id="settleToggle" class="sr-only peer" onchange="toggleSettlement()">
-                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 <span class="ml-2 text-sm font-bold text-indigo-700" id="settleLabelText">標記已發放</span>
                             </label>
                         </div>
@@ -237,7 +284,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">本期計算基準月薪</label>
                                 <div class="relative">
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">NT$</span>
-                                    <input type="number" id="monthlySalary" class="w-full pl-12 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50 focus:bg-white transition" placeholder="例如: 36000" oninput="updateSalaryDisplay()" onchange="saveData()">
+                                    <input type="number" id="monthlySalary" class="w-full pl-12 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50 transition" placeholder="例如: 36000" oninput="updateSalaryDisplay()" onchange="saveData()">
                                 </div>
                             </div>
                             <div class="flex gap-3 pt-2">
@@ -254,47 +301,54 @@
                     </div>
                 </div>
 
-                <!-- 右側：請假紀錄 -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                <!-- 右側：請假紀錄 (唯讀模式下會自動延伸寬度) -->
+                <div class="w-full lg:w-1/2 flex flex-col bg-white p-5 rounded-xl shadow-sm border border-gray-200" id="leaveRecordsColumn">
                     <h3 class="font-bold text-gray-800 text-lg mb-3 flex items-center">
                         <i class="fas fa-plane-departure text-teal-500 mr-2"></i> 本期請假紀錄
                     </h3>
-                    <form id="addLeaveForm" class="flex flex-col gap-3 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    
+                    <!-- 新增請假表單 (唯讀模式隱藏) -->
+                    <form id="addLeaveForm" class="flex flex-col gap-3 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200 admin-only">
                         <div class="flex flex-wrap gap-2 items-center">
-                            <input type="date" id="leaveStartDate" required class="p-2 border border-gray-300 rounded-lg text-sm w-36 focus:ring-2 focus:ring-teal-500" title="開始日期" onchange="toggleWeekendCheckbox()">
+                            <input type="date" id="leaveStartDate" required class="p-2 border border-gray-300 rounded-lg text-sm w-32 focus:ring-2 focus:ring-teal-500" onchange="toggleWeekendCheckbox()">
                             <span class="text-gray-500 font-medium text-sm">至</span>
-                            <input type="date" id="leaveEndDate" class="p-2 border border-gray-300 rounded-lg text-sm w-36 focus:ring-2 focus:ring-teal-500" title="結束日期 (單日請留空)" onchange="toggleWeekendCheckbox()">
+                            <input type="date" id="leaveEndDate" class="p-2 border border-gray-300 rounded-lg text-sm w-32 focus:ring-2 focus:ring-teal-500" onchange="toggleWeekendCheckbox()">
                             <select id="leaveHours" required class="p-2 border border-gray-300 rounded-lg text-sm grow focus:ring-2 focus:ring-teal-500">
                                 <option value="8">全天 (1 天)</option>
                                 <option value="4">半天 (0.5 天)</option>
                             </select>
-                            <button type="submit" id="btnSubmitLeave" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-teal-700 transition font-medium shadow-sm">新增</button>
+                            <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-teal-700 transition shadow-sm">新增</button>
                         </div>
                         <div id="weekendToggleDiv" class="hidden">
                             <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="excludeWeekends" checked class="rounded border-gray-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
-                                <span class="ml-2 text-sm text-gray-700 font-medium">區間請假自動排除六日</span>
+                                <input type="checkbox" id="excludeWeekends" checked class="rounded border-gray-300 text-teal-600 w-4 h-4">
+                                <span class="ml-2 text-sm text-gray-700 font-medium">自動排除六日</span>
                             </label>
                         </div>
                     </form>
+
                     <div id="leaveErrorMsg" class="hidden text-red-600 text-sm mb-4 font-medium bg-red-50 p-2.5 rounded-lg border border-red-200 shadow-sm"></div>
-                    
+
+                    <!-- 請假列表 -->
                     <div class="flex-grow border border-gray-200 rounded-lg overflow-hidden flex flex-col min-h-[200px]">
-                        <div class="overflow-y-auto max-h-[250px] grow">
+                        <div class="overflow-y-auto max-h-[250px] lg:max-h-full grow">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="p-3 font-medium text-gray-600 border-b">日期</th>
                                         <th class="p-3 font-medium text-gray-600 border-b">天數</th>
-                                        <th class="p-3 font-medium text-gray-600 border-b text-right" id="thDeleteLeave">操作</th>
+                                        <th class="p-3 font-medium text-gray-600 border-b text-right admin-only">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="leaveRecordsList" class="divide-y divide-gray-100 bg-white"></tbody>
                             </table>
-                            <div id="emptyLeave" class="text-center p-8 text-gray-400 text-sm hidden flex flex-col items-center justify-center h-full">本期無請假紀錄</div>
+                            <div id="emptyLeave" class="text-center p-8 text-gray-400 text-sm hidden flex-col items-center justify-center h-full">
+                                本期無請假紀錄
+                            </div>
                         </div>
                     </div>
                 </div>
+                
             </div>
         </div>
         <div class="p-4 bg-white border-t border-gray-200 flex justify-end shrink-0">
@@ -303,54 +357,65 @@
     </div>
 </div>
 
-<!-- 自訂訊息框 (取代 alert) -->
-<div id="msgModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
-        <i class="fas fa-info-circle text-4xl text-indigo-500 mb-4" id="msgIcon"></i>
-        <p class="text-gray-800 mb-6 font-medium" id="msgText"></p>
-        <button onclick="closeModal('msgModal')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow transition">確定</button>
-    </div>
-</div>
+<!-- 系統提示元件 (Toast) -->
+<div id="toastContainer" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
 <script type="module">
-    // 匯入 Firebase v11.6.1 模組
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // 引入 Firebase SDK (Module 語法)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 🔴 ==================================================== 🔴
-    // ⚠️ 必填：請將下方替換為你的 Firebase 專案 Config
-    // 🔴 ==================================================== 🔴
+    // ==========================================
+    // ⚠️ 請將下方的 firebaseConfig 替換為你在後台取得的設定
+    // ==========================================
     const firebaseConfig = {
-        apiKey: "AIzaSyCPNcw6zmIUzhkgtK_9AuJGPJcoeWnAIuk",
-        authDomain: "sdp-leavesystem.firebaseapp.com",
-        projectId: "sdp-leavesystem",
-        storageBucket: "sdp-leavesystem.firebasestorage.app",
-        messagingSenderId: "189204961551",
-        appId: "1:189204961551:web:58fb5265dd6635523a467a"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
-
+    
     // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
 
-    // 系統狀態
+    // 系統全域變數
     let currentUser = null;
-    let isReadOnly = false; // 是否為老師查詢的唯讀模式
-    
-    window.employees = []; // 全域變數供渲染使用
+    window.isReadOnlyMode = false; // 全域唯讀鎖定
+    window.employees = []; 
     window.currentViewEmpId = null;
     window.currentViewPeriodId = null;
     window.currentSort = { key: 'default', direction: 'asc' };
     window.currentSortedListForExport = [];
 
-    // --- Firebase 身分驗證邏輯 ---
+    // --- 自訂提示框 (取代 alert) ---
+    window.showToast = (msg, type = 'success') => {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bgColor = type === 'error' ? 'bg-red-600' : 'bg-teal-600';
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        
+        toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-10 opacity-0 flex items-center font-medium`;
+        toast.innerHTML = `<i class="fas ${icon} mr-3 text-lg"></i> ${msg}`;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+
+    // --- Firebase 身分驗證 ---
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            isReadOnly = false;
+            window.isReadOnlyMode = false;
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appMain').style.display = 'block';
             document.getElementById('userInfo').innerHTML = `<i class="fas fa-user-circle text-indigo-500 mr-1"></i> ${user.displayName} (管理員)`;
@@ -358,8 +423,7 @@
             await loadDataFromCloud();
         } else {
             currentUser = null;
-            // 除非是唯讀模式，否則回到登入頁
-            if (!isReadOnly) {
+            if (!window.isReadOnlyMode) {
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('appMain').style.display = 'none';
                 window.employees = [];
@@ -368,24 +432,25 @@
     });
 
     window.loginWithGoogle = () => {
-        signInWithPopup(auth, googleProvider).catch((error) => {
-            showMsg("登入失敗，請確認設定檔是否正確或網域已授權。");
-            console.error(error);
+        signInWithPopup(auth, googleProvider).catch(err => {
+            console.error(err);
+            showToast("登入失敗，請確認網路連線或設定", "error");
         });
     };
 
     window.logout = () => {
-        isReadOnly = false;
+        window.isReadOnlyMode = false;
         signOut(auth).then(() => {
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('appMain').style.display = 'none';
             document.getElementById('queryCodeInput').value = '';
+            showToast("已成功登出");
         });
     };
 
     // --- 資料庫讀寫邏輯 ---
     async function loadDataFromCloud() {
-        if (!currentUser) return;
+        if (!currentUser || window.isReadOnlyMode) return;
         try {
             const docRef = doc(db, 'users', currentUser.uid, 'system', 'data');
             const docSnap = await getDoc(docRef);
@@ -394,42 +459,40 @@
             } else {
                 window.employees = [];
             }
-            window.renderTable();
+            renderTable();
         } catch (error) {
-            showMsg("讀取資料失敗，請確認 Firebase 規則設定。");
+            console.error(error);
+            showToast("讀取雲端資料失敗", "error");
         }
     }
 
     window.saveData = async () => {
-        if (!currentUser || isReadOnly) return; // 唯讀模式禁止存檔
+        if (!currentUser || window.isReadOnlyMode) return;
         try {
-            // 儲存園長完整資料
-            const docRef = doc(db, 'users', currentUser.uid, 'system', 'data');
-            await setDoc(docRef, { employees: window.employees });
+            // 儲存完整資料供園長使用
+            await setDoc(doc(db, 'users', currentUser.uid, 'system', 'data'), { employees: window.employees });
             
-            // 同步分享一份到公共查詢區 (依據自訂代碼)
+            // 同時更新「每一位有設定查詢碼」的老師公開資料，供免登入查詢
             for (const emp of window.employees) {
-                if (emp.queryCode) {
-                    const publicRef = doc(db, 'public_leaves', emp.queryCode.toUpperCase());
-                    await setDoc(publicRef, { empData: emp });
+                if (emp.publicCode && emp.publicCode.trim() !== '') {
+                    await setDoc(doc(db, 'public_leaves', emp.publicCode.trim()), { empData: emp });
                 }
             }
+            showToast("資料已自動同步至雲端");
         } catch (error) {
-            console.error("儲存失敗", error);
+            console.error(error);
+            showToast("儲存失敗，請檢查權限設定", "error");
         }
     };
 
-    // --- 老師免登入查詢邏輯 ---
-    window.queryLeaveByCode = async () => {
-        const codeInput = document.getElementById('queryCodeInput');
-        const code = codeInput.value.trim().toUpperCase();
-        const errorMsg = document.getElementById('queryErrorMsg');
+    // --- 老師免登入查詢功能 ---
+    window.searchTeacherData = async () => {
+        const code = document.getElementById('queryCodeInput').value.trim();
+        if (!code) return showToast("請輸入查詢 ID", "error");
         
-        if (!code) {
-            errorMsg.innerText = "請輸入您的查詢代碼！";
-            errorMsg.classList.remove('hidden');
-            return;
-        }
+        const btn = document.querySelector('#queryCodeInput + button');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
 
         try {
             const publicRef = doc(db, 'public_leaves', code);
@@ -437,86 +500,53 @@
             
             if (docSnap.exists()) {
                 const data = docSnap.data().empData;
-                window.employees = [data]; // 只載入該名員工
-                isReadOnly = true;
+                window.employees = [data];
+                window.isReadOnlyMode = true;
                 
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appMain').style.display = 'block';
                 document.getElementById('userInfo').innerHTML = `<i class="fas fa-eye text-teal-500 mr-1"></i> 老師查詢模式 (${data.name})`;
                 
                 setupModeUI();
-                window.renderTable();
-                errorMsg.classList.add('hidden');
+                renderTable();
+                showToast(`歡迎回來，${data.name} 老師`);
             } else {
-                errorMsg.innerText = "查無此代碼，請確認是否輸入正確。";
-                errorMsg.classList.remove('hidden');
+                showToast("找不到此 ID 的資料，請確認輸入是否正確", "error");
             }
         } catch (error) {
-            errorMsg.innerText = "查詢失敗，請稍後再試。";
-            errorMsg.classList.remove('hidden');
+            console.error(error);
+            showToast("查詢失敗，系統發生錯誤", "error");
+        } finally {
+            btn.innerHTML = '<i class="fas fa-arrow-right"></i>';
+            btn.disabled = false;
         }
     };
 
-    // --- 介面模式設定 (唯讀 vs 管理) ---
+    // --- UI 模式設定 (嚴格唯讀限制) ---
     function setupModeUI() {
-        if (isReadOnly) {
-            document.getElementById('headerTitle').innerText = "特休查詢 (唯讀)";
-            document.getElementById('headerSubtitle').innerText = "您僅可查看個人特休紀錄，無法修改。";
-            document.getElementById('btnAdd').style.display = 'none';
-            document.getElementById('btnDownload').style.display = 'none';
-            
-            // 隱藏紀錄彈窗內的編輯元素
-            document.getElementById('addLeaveForm').style.display = 'none';
-            document.getElementById('thDeleteLeave').style.display = 'none';
-            
-            // 顯示設定區，但單獨隱藏【結算卡片】與【遞延切換開關】
-            document.getElementById('adminSettingsArea').style.display = 'block';
-            document.getElementById('modalGridArea').classList.add('lg:grid-cols-2');
-            document.getElementById('settlementCard').style.display = 'none';
-            document.getElementById('deferToggleWrapper').style.display = 'none';
-            
-            // 隱藏主表格的結算欄位
-            document.getElementById('thStatus').style.display = 'none';
-            document.getElementById('thWage').style.display = 'none';
+        const isRead = window.isReadOnlyMode;
+        
+        if (isRead) {
+            document.getElementById('headerTitle').innerHTML = '<i class="fas fa-calendar-check mr-3 text-teal-600"></i>老師專屬查詢區';
+            document.getElementById('headerSubtitle').innerText = "您僅可查看個人特休紀錄與明細，無法進行任何修改。";
         } else {
-            document.getElementById('headerTitle').innerText = "特休紀錄與結算系統";
-            document.getElementById('headerSubtitle').innerText = "雲端同步中，資料安全有保障";
-            document.getElementById('btnAdd').style.display = 'flex';
-            document.getElementById('btnDownload').style.display = 'flex';
-            
-            // 顯示所有管理元素
-            document.getElementById('addLeaveForm').style.display = 'flex';
-            document.getElementById('thDeleteLeave').style.display = 'table-cell';
-            
-            document.getElementById('adminSettingsArea').style.display = 'block';
-            document.getElementById('modalGridArea').classList.add('lg:grid-cols-2');
-            document.getElementById('settlementCard').style.display = 'block';
-            document.getElementById('deferToggleWrapper').style.display = 'inline-flex';
-            
-            // 顯示主表格的結算欄位
-            document.getElementById('thStatus').style.display = 'table-cell';
-            document.getElementById('thWage').style.display = 'table-cell';
+            document.getElementById('headerTitle').innerHTML = '<i class="fas fa-calendar-check mr-3 text-indigo-600"></i>特休紀錄與結算系統';
+            document.getElementById('headerSubtitle').innerText = "支援點擊標題排序、歷史查詢、離職結算與雲端同步";
         }
-    }
-</script>
 
-<script>
-    // --- 輔助函式 ---
-    function showMsg(text, isError = false) {
-        document.getElementById('msgText').innerText = text;
-        const icon = document.getElementById('msgIcon');
-        if (isError) {
-            icon.className = "fas fa-exclamation-triangle text-4xl text-red-500 mb-4";
-        } else {
-            icon.className = "fas fa-info-circle text-4xl text-indigo-500 mb-4";
-        }
-        document.getElementById('msgModal').classList.remove('hidden');
+        // 切換按鈕與特殊區塊顯示
+        document.getElementById('btnAdd').style.display = isRead ? 'none' : 'flex';
+        document.getElementById('btnExport').style.display = isRead ? 'none' : 'flex';
+        
+        const adminElements = document.querySelectorAll('.admin-only');
+        adminElements.forEach(el => {
+            el.style.display = isRead ? 'none' : '';
+        });
     }
 
     function formatDate(dateObj) {
         return dateObj.toISOString().split('T')[0];
     }
-
     function isDateInPeriod(dateStr, startStr, endStr) {
         const d = new Date(dateStr); d.setHours(0,0,0,0);
         const s = new Date(startStr); s.setHours(0,0,0,0);
@@ -524,7 +554,6 @@
         return d >= s && d <= e;
     }
 
-    // --- 特休計算核心邏輯 ---
     function getPeriods(emp) {
         const hireDate = new Date(emp.hireDate);
         const today = new Date();
@@ -545,8 +574,7 @@
             if (resignDate && p05End > resignDate) p05End = resignDate;
             periods.push({
                 id: '0.5', name: '滿半年 (第0.5年)',
-                start: formatDate(halfYear), end: formatDate(p05End),
-                baseDays: 3
+                start: formatDate(halfYear), end: formatDate(p05End), baseDays: 3
             });
         }
 
@@ -565,8 +593,7 @@
 
             periods.push({
                 id: i.toString(), name: `滿 ${i} 年`,
-                start: formatDate(pStart), end: formatDate(pEnd),
-                baseDays: days
+                start: formatDate(pStart), end: formatDate(pEnd), baseDays: days
             });
         }
 
@@ -575,7 +602,6 @@
         periods.forEach((p, index) => {
             if (!emp.periodSettings) emp.periodSettings = {};
             const settings = emp.periodSettings[p.id] || {};
-            
             const isLastPeriodAndResigned = resignDate && (index === periods.length - 1);
             
             p.isDeferred = isLastPeriodAndResigned ? false : !!settings.isDeferred;
@@ -620,7 +646,6 @@
         return current || periods[0];
     }
 
-    // --- 介面渲染與排序 ---
     window.sortEmployees = (key) => {
         if (window.currentSort.key === key) {
             window.currentSort.direction = window.currentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -628,32 +653,26 @@
             window.currentSort.key = key;
             window.currentSort.direction = 'asc';
         }
-        window.renderTable();
+        renderTable();
     };
 
-    function updateSortIcons() {
-        ['name', 'hireDate', 'remain'].forEach(k => {
-            const el = document.getElementById(`sortIcon-${k}`);
-            if(el) el.className = 'fas fa-sort ml-1 text-indigo-300';
-        });
-        
-        if (window.currentSort.key !== 'default') {
-            const icon = document.getElementById(`sortIcon-${window.currentSort.key}`);
-            if (icon) {
-                icon.className = window.currentSort.direction === 'asc' ? 'fas fa-sort-up ml-1 text-indigo-600' : 'fas fa-sort-down ml-1 text-indigo-600';
-            }
-        }
-    }
-
-    window.renderTable = () => {
+    function renderTable() {
         const tbody = document.getElementById('employeeList');
         const emptyState = document.getElementById('emptyState');
         const table = document.getElementById('employeeTable');
         
         tbody.innerHTML = '';
-        updateSortIcons();
         
-        if (!window.employees || window.employees.length === 0) {
+        ['name', 'hireDate', 'remain'].forEach(k => {
+            const el = document.getElementById(`sortIcon-${k}`);
+            if(el) el.className = 'fas fa-sort ml-1 text-indigo-300';
+        });
+        if (window.currentSort.key !== 'default') {
+            const icon = document.getElementById(`sortIcon-${window.currentSort.key}`);
+            if (icon) icon.className = window.currentSort.direction === 'asc' ? 'fas fa-sort-up ml-1 text-indigo-600' : 'fas fa-sort-down ml-1 text-indigo-600';
+        }
+        
+        if (window.employees.length === 0) {
             emptyState.classList.remove('hidden');
             table.classList.add('hidden');
             return;
@@ -686,9 +705,7 @@
         }
 
         window.currentSortedListForExport = displayData.map(d => d.emp);
-
-        // 唯讀模式不顯示敏感的代金狀態
-        const isReadOnly = document.getElementById('userInfo').innerHTML.includes('唯讀');
+        const isRead = window.isReadOnlyMode;
 
         displayData.forEach(data => {
             const { emp, current } = data;
@@ -704,35 +721,29 @@
             else statusHtml = '<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-bold border">未遞延(應結算)</span>';
 
             let wageHtml = '';
-            if(isReadOnly) {
-                wageHtml = `<span class="text-gray-400 text-sm">-</span>`;
-            } else {
-                if (current.settleDays === 0) wageHtml = '<span class="text-gray-400 text-sm">無須發放</span>';
-                else if (current.isSettled) wageHtml = `<span class="text-green-600 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs text-green-500">已結清</div>`;
-                else wageHtml = `<span class="text-indigo-700 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs ${isExpired||isResigned ? 'text-red-500' : 'text-gray-400'}">待結算</div>`;
-            }
-            
+            if (current.settleDays === 0) wageHtml = '<span class="text-gray-400 text-sm">無須發放</span>';
+            else if (current.isSettled) wageHtml = `<span class="text-green-600 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs text-green-500">已結清</div>`;
+            else wageHtml = `<span class="text-indigo-700 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs ${isExpired||isResigned ? 'text-red-500' : 'text-gray-400'}">待結算</div>`;
+
             let adminCols = '';
-            if (!isReadOnly) {
+            let actionBtns = '';
+
+            if (isRead) {
+                actionBtns = `<button onclick="openRecordModal('${emp.id}')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition font-bold shadow-sm w-full"><i class="fas fa-search mr-1"></i> 查看明細</button>`;
+            } else {
                 adminCols = `
                     <td class="p-4 border-b border-gray-100 text-center">${statusHtml}</td>
                     <td class="p-4 border-b border-gray-100 text-right">${wageHtml}</td>
+                `;
+                actionBtns = `
+                    <button onclick="openRecordModal('${emp.id}')" class="text-teal-600 hover:text-teal-800 bg-teal-50 p-2 rounded transition mr-1" title="紀錄與結算"><i class="fas fa-file-signature"></i></button>
+                    <button onclick="openEditModal('${emp.id}')" class="text-blue-600 hover:text-blue-800 bg-blue-50 p-2 rounded transition mr-1" title="編輯資料/設定離職"><i class="fas fa-pencil-alt"></i></button>
+                    <button onclick="deleteEmployee('${emp.id}')" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded transition" title="刪除"><i class="fas fa-trash"></i></button>
                 `;
             }
 
             const tr = document.createElement('tr');
             tr.className = "hover:bg-indigo-50/50 transition bg-white";
-            
-            // 操作按鈕 (唯讀模式只保留檢視，隱藏編輯刪除)
-            let actionBtns = `<button onclick="openRecordModal('${emp.id}')" class="text-teal-600 hover:text-teal-800 bg-teal-50 p-2 rounded transition mr-1" title="紀錄"><i class="fas fa-file-signature"></i></button>`;
-            
-            if (!isReadOnly) {
-                actionBtns += `
-                    <button onclick="openEditModal('${emp.id}')" class="text-blue-600 hover:text-blue-800 bg-blue-50 p-2 rounded transition mr-1" title="編輯資料"><i class="fas fa-pencil-alt"></i></button>
-                    <button onclick="deleteEmployee('${emp.id}')" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded transition" title="刪除"><i class="fas fa-trash"></i></button>
-                `;
-            }
-
             tr.innerHTML = `
                 <td class="p-4 border-b border-gray-100 font-bold text-gray-800">
                     ${emp.name}
@@ -755,23 +766,26 @@
             `;
             tbody.appendChild(tr);
         });
-    };
+    }
 
-    // --- Modal 表單操作 ---
     window.openEditModal = (empId = null) => {
         const title = document.getElementById('modalTitle');
         if (empId) {
             const emp = window.employees.find(e => e.id === empId);
             document.getElementById('empId').value = emp.id;
             document.getElementById('empName').value = emp.name;
-            document.getElementById('empQueryCode').value = emp.queryCode || '';
+            document.getElementById('empPublicCode').value = emp.publicCode || '';
             document.getElementById('empHireDate').value = emp.hireDate;
             document.getElementById('empResignDate').value = emp.resignDate || '';
             document.getElementById('empRemarks').value = emp.remarks || '';
             title.innerText = '編輯員工資料';
         } else {
-            document.getElementById('employeeForm').reset();
             document.getElementById('empId').value = '';
+            document.getElementById('empName').value = '';
+            document.getElementById('empPublicCode').value = '';
+            document.getElementById('empHireDate').value = '';
+            document.getElementById('empResignDate').value = '';
+            document.getElementById('empRemarks').value = '';
             title.innerText = '新增員工';
         }
         document.getElementById('employeeModal').classList.remove('hidden');
@@ -781,54 +795,65 @@
         document.getElementById(id).classList.add('hidden');
         if (id === 'recordModal') {
             window.currentViewEmpId = null;
-            window.renderTable(); 
+            renderTable(); 
         }
     };
 
-    document.getElementById('employeeForm').addEventListener('submit', async function(e) {
+    document.getElementById('employeeForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const id = document.getElementById('empId').value;
         const name = document.getElementById('empName').value;
-        const queryCode = document.getElementById('empQueryCode').value.trim().toUpperCase();
+        const publicCode = document.getElementById('empPublicCode').value;
         const hireDate = document.getElementById('empHireDate').value;
         const resignDate = document.getElementById('empResignDate').value;
         const remarks = document.getElementById('empRemarks').value;
 
         if (resignDate && new Date(resignDate) < new Date(hireDate)) {
-            showMsg("離職日不能早於到職日！", true); return;
+            showToast("離職日不能早於到職日！", "error");
+            return;
         }
 
         if (id) {
             const emp = window.employees.find(e => e.id === id);
-            emp.name = name; emp.queryCode = queryCode; emp.hireDate = hireDate;
-            emp.resignDate = resignDate; emp.remarks = remarks;
+            emp.name = name;
+            emp.publicCode = publicCode;
+            emp.hireDate = hireDate;
+            emp.resignDate = resignDate;
+            emp.remarks = remarks;
         } else {
             window.employees.push({
                 id: Date.now().toString(),
-                name: name, queryCode: queryCode, hireDate: hireDate, resignDate: resignDate, remarks: remarks,
+                name, publicCode, hireDate, resignDate, remarks,
                 periodSettings: {}, leaves: []
             });
         }
         
-        await window.saveData();
+        window.saveData();
         closeModal('employeeModal');
-        window.renderTable();
+        renderTable();
     });
 
-    window.deleteEmployee = async (id) => {
-        if(confirm("確定要刪除嗎？此操作無法復原。")) {
-            window.employees = window.employees.filter(e => e.id !== id);
-            await window.saveData();
-            window.renderTable();
-        }
+    let pendingDeleteId = null;
+    window.deleteEmployee = (id) => {
+        pendingDeleteId = id;
+        document.getElementById('confirmModal').classList.remove('hidden');
     };
+    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+        if (pendingDeleteId) {
+            window.employees = window.employees.filter(e => e.id !== pendingDeleteId);
+            window.saveData();
+            closeModal('confirmModal');
+            renderTable();
+            showToast("已成功刪除資料");
+        }
+    });
 
-    // --- 紀錄與結算視窗 ---
     window.openRecordModal = (empId) => {
         window.currentViewEmpId = empId;
         const emp = window.employees.find(e => e.id === empId);
         
-        document.getElementById('recordModalName').innerHTML = `<i class="fas fa-file-signature mr-2 text-teal-200"></i> ${emp.name} 的紀錄`;
+        document.getElementById('recordModalName').innerHTML = `<i class="fas fa-${window.isReadOnlyMode ? 'search' : 'file-signature'} mr-2 text-teal-200"></i> ${emp.name} 的紀錄明細`;
+        
         const resignBadge = document.getElementById('resignBadge');
         if (emp.resignDate) {
             resignBadge.classList.remove('hidden');
@@ -857,8 +882,17 @@
             
             document.getElementById('leaveStartDate').value = '';
             document.getElementById('leaveEndDate').value = '';
-            window.toggleWeekendCheckbox();
             document.getElementById('leaveErrorMsg').classList.add('hidden');
+            
+            // 唯讀模式的排版調整
+            if (window.isReadOnlyMode) {
+                document.getElementById('settingsColumn').classList.replace('lg:w-1/2', 'lg:w-1/3');
+                document.getElementById('leaveRecordsColumn').classList.replace('lg:w-1/2', 'lg:w-2/3');
+            } else {
+                document.getElementById('settingsColumn').classList.replace('lg:w-1/3', 'lg:w-1/2');
+                document.getElementById('leaveRecordsColumn').classList.replace('lg:w-2/3', 'lg:w-1/2');
+            }
+
             document.getElementById('recordModal').classList.remove('hidden');
         }
     };
@@ -873,6 +907,7 @@
         const periods = getPeriods(emp);
         const p = periods.find(per => per.id === window.currentViewPeriodId);
         if(!p) return;
+        const isRead = window.isReadOnlyMode;
 
         document.getElementById('recordModalPeriod').innerHTML = `<span class="font-bold text-gray-700 mr-2">${p.name}:</span> ${p.start} 至 ${p.end}`;
         document.getElementById('statTotal').innerText = p.totalAvailable;
@@ -881,9 +916,7 @@
         document.getElementById('statRemain').innerText = p.remainDays;
         
         const remainDetail = document.getElementById('statRemainDetail');
-        const isReadOnly = document.getElementById('userInfo').innerHTML.includes('唯讀');
-
-        if (isReadOnly) {
+        if (isRead) {
             remainDetail.style.display = 'none';
         } else if (p.remainDays > 0 && p.remainCarryOver > 0) {
             remainDetail.style.display = 'block';
@@ -896,29 +929,35 @@
         }
         
         const deferToggle = document.getElementById('deferToggle');
-        const settleToggle = document.getElementById('settleToggle');
         const deferToggleWrapper = document.getElementById('deferToggleWrapper');
         const deferDesc = document.getElementById('deferDesc');
-        const settleDaysDisplay = document.getElementById('settleDaysDisplay');
+        const deferReadOnlyText = document.getElementById('deferReadOnlyText');
         
         deferToggle.checked = p.isDeferred;
-        settleToggle.checked = p.isSettled;
         document.getElementById('deferralDeadline').innerText = `本期最後期限：${p.deadline}`;
         
-        if (isReadOnly) {
-            // 唯讀模式：顯示明確的遞延狀態文字 (開關已在 setupModeUI 被隱藏)
+        if (isRead) {
+            deferToggleWrapper.classList.add('hidden');
+            deferReadOnlyText.classList.remove('hidden');
+            
             if (p.isResignedPeriod) {
-                deferDesc.innerHTML = `<span class="text-red-600 font-bold">已離職。依勞基法規定，未休完之特休須全數結算。</span>`;
-                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
+                deferReadOnlyText.innerText = "離職強制結算";
+                deferReadOnlyText.className = "text-sm font-bold px-3 py-1 rounded-full border bg-red-50 text-red-700 border-red-200";
+                deferDesc.innerHTML = `<span class="text-red-600 font-bold">因離職依法不得遞延，須全數結算。</span>`;
             } else if (p.isDeferred) {
-                deferDesc.innerHTML = `<span class="text-orange-700 font-bold"><i class="fas fa-check-circle mr-1"></i>已啟用遞延至下一年度</span><br><span class="text-xs text-gray-500 mt-1">期限內未休畢之特休依法將轉為結算。</span>`;
-                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
+                deferReadOnlyText.innerText = "已啟用遞延至下一年度";
+                deferReadOnlyText.className = "text-sm font-bold px-3 py-1 rounded-full border bg-orange-50 text-orange-700 border-orange-200";
+                deferDesc.innerHTML = `本期未休畢之特休已遞延至下一年度。`;
             } else {
-                deferDesc.innerHTML = `<span class="text-gray-700 font-bold"><i class="fas fa-info-circle mr-1"></i>本期尚未遞延 (應於期末結算)</span>`;
-                document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full border border-orange-100";
+                deferReadOnlyText.innerText = "本期尚未遞延";
+                deferReadOnlyText.className = "text-sm font-bold px-3 py-1 rounded-full border bg-gray-50 text-gray-600 border-gray-200";
+                deferDesc.innerHTML = `尚未啟用遞延，到期未休畢依法應結算工資。`;
             }
         } else {
-            // 管理員模式：顯示設定提示與允許操作
+            deferToggleWrapper.classList.remove('hidden');
+            deferReadOnlyText.classList.add('hidden');
+
+            const settleDaysDisplay = document.getElementById('settleDaysDisplay');
             if (p.isResignedPeriod) {
                 deferToggle.disabled = true;
                 deferToggleWrapper.classList.add('opacity-50', 'cursor-not-allowed');
@@ -928,7 +967,7 @@
             } else {
                 deferToggle.disabled = false;
                 deferToggleWrapper.classList.remove('opacity-50', 'cursor-not-allowed');
-                deferDesc.innerHTML = `啟用後，本期【新增特休 <span class="font-bold text-orange-600">${p.remainBase}天</span>】將移至下期。<br><span class="text-xs text-gray-500 mt-1">*上期遞延且未休畢的 <span class="font-bold">${p.remainCarryOver} 天</span>依法轉為結算。</span>`;
+                deferDesc.innerHTML = `啟用後，本期【新增特休 <span class="font-bold text-orange-600">${p.remainBase}天</span>】將移至下期。<br><span class="text-xs text-gray-500 mt-1">*上期遞延且未休畢的 <span class="font-bold">${p.remainCarryOver} 天</span>依法將轉為結算。</span>`;
                 
                 if(p.isDeferred) {
                     document.getElementById('deferralDeadlineBox').className = "mt-3 inline-flex items-center text-xs font-medium bg-red-50 text-red-700 px-3 py-1.5 rounded-full border border-red-200";
@@ -938,42 +977,38 @@
                     settleDaysDisplay.innerHTML = `${p.settleDays} 天`;
                 }
             }
-        }
 
-        const settleToggleWrapper = document.getElementById('settleToggleWrapper');
-        if (p.settleDays === 0 || isReadOnly) {
-            settleToggle.disabled = true;
-            settleToggleWrapper.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-            settleToggle.disabled = false;
-            settleToggleWrapper.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
+            const settleToggle = document.getElementById('settleToggle');
+            const settleToggleWrapper = document.getElementById('settleToggleWrapper');
+            settleToggle.checked = p.isSettled;
+            if (p.settleDays === 0) {
+                settleToggle.disabled = true;
+                settleToggleWrapper.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                settleToggle.disabled = false;
+                settleToggleWrapper.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
 
-        const wageBoxTitle = document.getElementById('wageBoxTitle');
-        const wageBox = document.getElementById('wageBox');
-        if (p.isSettled && p.settleDays > 0) {
-            document.getElementById('settleLabelText').innerText = '已結算發放';
-            wageBoxTitle.innerText = '已發放代金';
-            wageBox.className = "bg-green-50 p-3 rounded-lg border border-green-300 flex-[1.5] text-center";
-            wageBoxTitle.className = "text-xs text-green-700 mb-1 font-medium";
-            document.getElementById('totalWageDisplay').className = "font-bold text-2xl text-green-700";
-        } else {
-            document.getElementById('settleLabelText').innerText = '標記為已發放';
-            wageBoxTitle.innerText = '應發代金估算';
-            wageBox.className = "bg-indigo-50 p-3 rounded-lg border border-indigo-200 flex-[1.5] text-center";
-            wageBoxTitle.className = "text-xs text-indigo-600 mb-1 font-medium";
-            document.getElementById('totalWageDisplay').className = "font-bold text-2xl text-indigo-700";
-        }
-
-        if(isReadOnly){
-            document.getElementById('monthlySalary').value = '***';
-            document.getElementById('totalWageDisplay').innerText = '$***';
-        } else {
+            const wageBoxTitle = document.getElementById('wageBoxTitle');
+            const wageBox = document.getElementById('wageBox');
+            if (p.isSettled && p.settleDays > 0) {
+                document.getElementById('settleLabelText').innerText = '已結算發放';
+                wageBoxTitle.innerText = '已發放代金';
+                wageBox.className = "bg-green-50 p-3 rounded-lg border border-green-300 flex-[1.5] text-center";
+                wageBoxTitle.className = "text-xs text-green-700 mb-1 font-medium";
+                document.getElementById('totalWageDisplay').className = "font-bold text-2xl text-green-700";
+            } else {
+                document.getElementById('settleLabelText').innerText = '標記為已發放';
+                wageBoxTitle.innerText = '應發代金估算';
+                wageBox.className = "bg-indigo-50 p-3 rounded-lg border border-indigo-200 flex-[1.5] text-center";
+                wageBoxTitle.className = "text-xs text-indigo-600 mb-1 font-medium";
+                document.getElementById('totalWageDisplay').className = "font-bold text-2xl text-indigo-700";
+            }
             document.getElementById('monthlySalary').value = p.salary || '';
             calculateWageDisplay(p);
         }
-        
-        renderLeaveList(p.leaves, isReadOnly);
+
+        renderLeaveList(p.leaves);
     }
 
     window.toggleDeferral = () => {
@@ -993,7 +1028,6 @@
         renderModalData();
     };
 
-    // --- 請假邏輯 ---
     window.toggleWeekendCheckbox = () => {
         const start = document.getElementById('leaveStartDate').value;
         const end = document.getElementById('leaveEndDate').value;
@@ -1002,7 +1036,13 @@
         else toggleDiv.classList.add('hidden');
     };
 
-    document.getElementById('addLeaveForm').addEventListener('submit', async function(e) {
+    function showLeaveError(msg) {
+        const errorEl = document.getElementById('leaveErrorMsg');
+        errorEl.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> ${msg}`;
+        errorEl.classList.remove('hidden');
+    }
+
+    document.getElementById('addLeaveForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const startDateStr = document.getElementById('leaveStartDate').value;
@@ -1018,8 +1058,8 @@
         const errorEl = document.getElementById('leaveErrorMsg');
         errorEl.classList.add('hidden');
 
-        if (p.isSettled) { errorEl.innerHTML = `此期特休已結算發放，無法新增！`; errorEl.classList.remove('hidden'); return; }
-        if (new Date(startDateStr) > new Date(endDateStr)) { errorEl.innerHTML = `開始日期不能晚於結束！`; errorEl.classList.remove('hidden'); return; }
+        if (p.isSettled) return showLeaveError("此期特休已結算發放，無法新增紀錄！");
+        if (new Date(startDateStr) > new Date(endDateStr)) return showLeaveError("開始日期不能晚於結束日期！");
 
         let currentDate = new Date(startDateStr);
         const endDateObj = new Date(endDateStr);
@@ -1028,34 +1068,35 @@
         while (currentDate <= endDateObj) {
             const dayOfWeek = currentDate.getDay();
             const dateStr = formatDate(currentDate);
-            let skip = false;
-            if (startDateStr !== endDateStr && isExcludeWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) skip = true;
+            let skip = (startDateStr !== endDateStr && isExcludeWeekends && (dayOfWeek === 0 || dayOfWeek === 6));
             if (!skip) targetDates.push(dateStr);
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        if (targetDates.length === 0) { errorEl.innerHTML = `區間無工作日！`; errorEl.classList.remove('hidden'); return; }
+        if (targetDates.length === 0) return showLeaveError("所選區間內沒有有效的工作日！");
 
         const startD = new Date(p.start); startD.setHours(0,0,0,0);
         const endD = new Date(p.deadline); endD.setHours(23,59,59,999);
         for (let d of targetDates) {
             const checkD = new Date(d); checkD.setHours(0,0,0,0);
-            if (checkD < startD || checkD > endD) { errorEl.innerHTML = `${d} 不在有效區間！`; errorEl.classList.remove('hidden'); return; }
-            if (emp.leaves.some(l => l.date === d)) { errorEl.innerHTML = `${d} 已有請假紀錄！`; errorEl.classList.remove('hidden'); return; }
+            if (checkD < startD || checkD > endD) return showLeaveError(`日期 ${d} 不在該特休有效期間內！`);
+            if (emp.leaves.some(l => l.date === d)) return showLeaveError(`日期 ${d} 已經有請假紀錄，不可重複輸入！`);
         }
 
         const requestedDays = targetDates.length * (parseFloat(hours) / 8);
-        if (p.remainDays < requestedDays) { errorEl.innerHTML = `餘額不足！需 ${requestedDays}天，剩 ${p.remainDays}天。`; errorEl.classList.remove('hidden'); return; }
+        if (p.remainDays < requestedDays) return showLeaveError(`剩餘天數不足！區間共計 ${requestedDays} 天，但僅剩 ${p.remainDays} 天。`);
         
         targetDates.forEach(d => {
             emp.leaves.push({ 
                 id: Date.now().toString() + Math.random().toString().substring(2,6), 
-                periodId: window.currentViewPeriodId, date: d, hours: hours 
+                periodId: window.currentViewPeriodId, 
+                date: d, 
+                hours: hours 
             });
         });
 
         emp.leaves.sort((a,b) => new Date(b.date) - new Date(a.date));
-        await window.saveData();
+        window.saveData();
         
         document.getElementById('leaveStartDate').value = ''; 
         document.getElementById('leaveEndDate').value = ''; 
@@ -1063,29 +1104,31 @@
         renderModalData();
     });
 
-    window.deleteLeave = async (leaveId) => {
+    window.deleteLeave = (leaveId) => {
         const emp = window.employees.find(e => e.id === window.currentViewEmpId);
         emp.leaves = emp.leaves.filter(l => l.id !== leaveId);
-        await window.saveData();
+        window.saveData();
         renderModalData();
     };
 
-    function renderLeaveList(leaves, isReadOnly) {
+    function renderLeaveList(leaves) {
         const tbody = document.getElementById('leaveRecordsList');
         const emptyDiv = document.getElementById('emptyLeave');
+        const isRead = window.isReadOnlyMode;
+        
         tbody.innerHTML = '';
         if(leaves.length === 0) {
-            emptyDiv.classList.remove('hidden');
+            emptyDiv.classList.replace('hidden', 'flex');
         } else {
-            emptyDiv.classList.add('hidden');
+            emptyDiv.classList.replace('flex', 'hidden');
             leaves.forEach(l => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 border-b border-gray-100";
                 const daysStr = l.hours == 8 ? '<span class="bg-blue-100 text-blue-800 py-0.5 px-2 rounded text-xs font-bold">1 天</span>' : '<span class="bg-purple-100 text-purple-800 py-0.5 px-2 rounded text-xs font-bold">0.5 天</span>';
                 
-                let actionBtn = isReadOnly ? '' : `<td class="p-3 text-right"><button onclick="deleteLeave('${l.id}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button></td>`;
+                let deleteBtn = isRead ? '' : `<td class="p-3 text-right"><button onclick="deleteLeave('${l.id}')" class="text-red-400 hover:text-red-600 transition"><i class="fas fa-trash-alt"></i></button></td>`;
                 
-                tr.innerHTML = `<td class="p-3">${l.date}</td><td class="p-3">${daysStr}</td>${actionBtn}`;
+                tr.innerHTML = `<td class="p-3">${l.date}</td><td class="p-3">${daysStr}</td>${deleteBtn}`;
                 tbody.appendChild(tr);
             });
         }
@@ -1107,9 +1150,9 @@
 
     window.downloadExcel = () => {
         const listToExport = window.currentSortedListForExport.length > 0 ? window.currentSortedListForExport : window.employees;
-        if (listToExport.length === 0) { showMsg("沒有資料可下載！"); return; }
+        if (listToExport.length === 0) return showToast("沒有資料可下載！", "error");
         
-        let csv = "\uFEFF員工姓名,在職狀態,自訂代碼,離職日,到職日,備註說明,特休年度,特休區間(起),特休區間(迄),最後期限,總天數,已休,剩餘天數,遞延/結算狀態,應結算天數\n";
+        let csv = "\uFEFF員工姓名,專屬ID,在職狀態,離職日,到職日,備註說明,特休年度,特休區間(起),特休區間(迄),最後期限,總天數,已休,剩餘天數,遞延/結算狀態,應結算天數\n";
 
         listToExport.forEach(emp => {
             const periods = getPeriods(emp);
@@ -1117,14 +1160,10 @@
             const safeRemarks = emp.remarks ? emp.remarks.replace(/"/g, '""') : ''; 
             
             periods.forEach(p => {
-                let deferStatus = '';
-                if (p.isResignedPeriod) deferStatus = '離職強制結算';
-                else if (p.remainDays === 0) deferStatus = '無剩餘';
-                else if (p.isDeferred) deferStatus = '啟用遞延';
-                else deferStatus = '未遞延(應結算)';
+                let deferStatus = p.isResignedPeriod ? '離職強制結算' : (p.remainDays === 0 ? '無剩餘' : (p.isDeferred ? '啟用遞延' : '未遞延(應結算)'));
                 
                 const row = [
-                    `"${emp.name}"`, `"${status}"`, `"${emp.queryCode||''}"`, `"${emp.resignDate || ''}"`, `"${emp.hireDate}"`, `"${safeRemarks}"`,
+                    `"${emp.name}"`, `"${emp.publicCode || ''}"`, `"${status}"`, `"${emp.resignDate || ''}"`, `"${emp.hireDate}"`, `"${safeRemarks}"`,
                     `"${p.name}"`, `"${p.start}"`, `"${p.end}"`, `"${p.deadline}"`,
                     p.totalAvailable, p.usedDays, p.remainDays,
                     `"${deferStatus}"`, p.settleDays
@@ -1137,8 +1176,9 @@
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         const d = new Date();
-        link.download = `員工特休總表_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+        link.download = `特休總表_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
         link.click();
+        showToast("Excel 已成功下載");
     };
 </script>
 </body>
