@@ -23,7 +23,6 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         th.sortable:hover { background-color: #e0e7ff; }
 
-        /* Toast 動畫 */
         @keyframes slideInUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -104,16 +103,16 @@
                             員工姓名 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-name"></i>
                         </th>
                         <th class="p-4 font-semibold">到職日</th>
+                        <th class="p-4 font-semibold">專屬 ID</th>
                         <th class="p-4 font-semibold">當前年資</th>
                         <th class="p-4 font-semibold">特休區間</th>
                         <th class="p-4 font-semibold text-center">總天數</th>
                         <th class="p-4 font-semibold text-center cursor-pointer sortable transition" onclick="sortEmployees('remain')">
                             已休/剩餘 <i class="fas fa-sort ml-1 text-indigo-300" id="sortIcon-remain"></i>
                         </th>
-                        <!-- 唯讀模式隱藏的欄位 -->
                         <th class="p-4 font-semibold text-center admin-col">期末狀態</th>
                         <th class="p-4 font-semibold text-right admin-col">代金狀態</th>
-                        
+                        <th class="p-4 font-semibold">備註</th>
                         <th class="p-4 font-semibold text-center">操作</th>
                     </tr>
                 </thead>
@@ -160,6 +159,10 @@
                 <label class="block text-sm font-bold text-red-700 mb-1"><i class="fas fa-user-slash mr-1"></i> 離職日 (若在職請留空)</label>
                 <input type="date" id="empResignDate" class="w-full p-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 bg-white outline-none">
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">備註說明</label>
+                <textarea id="empRemarks" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="備註事項..."></textarea>
+            </div>
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button type="button" onclick="closeModal('employeeModal')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">取消</button>
                 <button type="submit" class="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow">儲存資料</button>
@@ -187,9 +190,8 @@
 
         <div class="p-6 overflow-y-auto grow bg-gray-50 flex flex-col md:flex-row gap-6">
             
-            <!-- 左側/上半部：狀態區 (園長模式與老師模式長不一樣) -->
+            <!-- 左側/上半部：狀態區 -->
             <div class="w-full md:w-1/2 flex flex-col gap-6" id="recordLeftPanel">
-                <!-- 天數圓餅概覽 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-center">
                         <div class="text-sm text-gray-500 mb-1 font-medium">總可休天數</div>
@@ -320,7 +322,7 @@
 </div>
 
 <script type="module">
-    // 🔥 將這裡換成你從 Firebase 後台取得的 Config 🔥
+    // 🔥 請將這裡換成你從 Firebase 後台取得的專屬 Config 🔥
     const firebaseConfig = {
         apiKey: "AIzaSyCPNcw6zmIUzhkgtK_9AuJGPJcoeWnAIuk",
         authDomain: "sdp-leavesystem.firebaseapp.com",
@@ -331,7 +333,7 @@
     };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
@@ -339,17 +341,13 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // 系統變數
     let employees = [];
     let currentUser = null;
     let currentViewEmpId = null;
     let currentViewPeriodId = null;
     let currentSort = { key: 'default', direction: 'asc' };
-    
-    // ⭐️ 核心安全變數：決定是否為唯讀模式 (老師查詢)
     window.isReadOnlyMode = true; 
 
-    // 自訂 Toast 提示工具
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -366,17 +364,12 @@
         }, 3000);
     }
 
-    // --- Firebase Auth 登入管理 ---
+    // 改用 redirect 模式登入，避免彈出視窗被阻擋
     window.loginWithGoogle = () => {
-        setLoading(true, "登入中...");
-        signInWithPopup(auth, provider).catch(error => {
+        setLoading(true, "導向 Google 登入中...");
+        signInWithRedirect(auth, provider).catch(error => {
             console.error("登入錯誤:", error);
-            if (error.code === 'auth/unauthorized-domain') {
-                showToast(`登入失敗：請將此網域加入 Firebase 授權網域白名單！`, 'error');
-                alert("【重要提示】\n您正在使用的預覽環境網域未授權。\n請到 Firebase 後台 -> Authentication -> 設定 -> 已授權網域\n新增網域： scf.usercontent.goog");
-            } else {
-                showToast(`登入失敗: ${error.message}`, 'error');
-            }
+            showToast(`登入失敗: ${error.message}`, 'error');
             setLoading(false);
         });
     };
@@ -389,6 +382,12 @@
             updateUIAfterAuth();
         });
     };
+
+    // 檢查重新導向回來的登入結果
+    getRedirectResult(auth).catch((error) => {
+        console.error("Redirect Error:", error);
+        showToast(`登入驗證失敗: ${error.message}`, 'error');
+    });
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -403,7 +402,6 @@
         }
     });
 
-    // --- 資料讀寫邏輯 (Firestore) ---
     async function loadDataFromCloud() {
         if (!currentUser) return;
         setLoading(true, "同步雲端資料中...");
@@ -426,11 +424,9 @@
     window.saveDataToCloud = async () => {
         if (window.isReadOnlyMode || !currentUser) return;
         try {
-            // 儲存至管理員私有區
             const docRef = doc(db, 'users', currentUser.uid, 'system', 'data');
             await setDoc(docRef, { employees });
             
-            // 同步至免登入公共查詢區 (Public Leaves)
             const batch = writeBatch(db);
             employees.forEach(emp => {
                 if(emp.queryCode && emp.queryCode.trim() !== '') {
@@ -439,7 +435,6 @@
                 }
             });
             await batch.commit();
-            
             renderTable();
         } catch(e) {
             showToast("存檔失敗", 'error');
@@ -447,7 +442,6 @@
         }
     };
 
-    // --- 老師免登入查詢 ---
     window.searchTeacherData = async () => {
         const code = document.getElementById('teacherQueryCode').value.trim();
         if(!code) {
@@ -459,7 +453,7 @@
             const snap = await getDoc(doc(db, 'public_leaves', code));
             if (snap.exists()) {
                 employees = [snap.data().data];
-                window.isReadOnlyMode = true; // 強制設定為唯讀
+                window.isReadOnlyMode = true;
                 updateUIAfterAuth();
                 document.getElementById('teacherQueryCode').value = '';
                 showToast("查詢成功");
@@ -479,7 +473,6 @@
         updateUIAfterAuth();
     };
 
-    // --- UI 切換邏輯 ---
     function updateUIAfterAuth() {
         const adminControls = document.getElementById('adminControls');
         const loginBtn = document.getElementById('loginBtn');
@@ -488,12 +481,10 @@
         const exitSearchBtn = document.getElementById('exitSearchBtn');
         const statusInfo = document.getElementById('loginStatusInfo');
 
-        // 唯讀欄位與按鈕的顯示控制
         document.querySelectorAll('.admin-col').forEach(el => window.isReadOnlyMode ? el.classList.add('hidden') : el.classList.remove('hidden'));
         document.querySelectorAll('.admin-only-block').forEach(el => window.isReadOnlyMode ? el.classList.add('hidden') : el.classList.remove('hidden'));
 
         if (!window.isReadOnlyMode && currentUser) {
-            // 園長登入模式
             adminControls.classList.remove('hidden');
             loginBtn.classList.add('hidden');
             teacherSearchArea.classList.add('hidden');
@@ -504,7 +495,6 @@
             document.getElementById('emptyTitle').innerText = "開始建立員工資料";
             document.getElementById('emptyDesc').innerText = "點擊右上方「新增員工」建立名冊。";
         } else if (window.isReadOnlyMode && employees.length > 0) {
-            // 老師查詢模式 (有資料)
             adminControls.classList.add('hidden');
             loginBtn.classList.add('hidden');
             teacherSearchArea.classList.add('hidden');
@@ -513,7 +503,6 @@
             statusInfo.innerHTML = `<i class="fas fa-eye text-indigo-500 mr-1"></i> 老師查詢模式`;
             statusInfo.className = "text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full inline-block mt-2";
         } else {
-            // 完全未登入
             adminControls.classList.add('hidden');
             loginBtn.classList.remove('hidden');
             teacherSearchArea.classList.remove('hidden');
@@ -524,7 +513,6 @@
             document.getElementById('emptyTitle').innerText = "尚無資料顯示";
             document.getElementById('emptyDesc').innerText = "請使用 Google 登入管理，或輸入查詢碼。";
         }
-        
         renderTable();
     }
 
@@ -544,11 +532,9 @@
     }
 
     function getPeriods(emp) {
-        // 【防呆機制】：過濾掉損壞或不完整的測試資料
         if (!emp || !emp.hireDate) return []; 
-        
         const hireDate = new Date(emp.hireDate);
-        if (isNaN(hireDate)) return []; // 確保日期格式正確
+        if (isNaN(hireDate)) return []; 
         
         const today = new Date();
         const resignDate = emp.resignDate ? new Date(emp.resignDate) : null;
@@ -662,7 +648,6 @@
         }
         emptyState.classList.add('hidden'); table.classList.remove('hidden');
 
-        // 【防呆機制】：過濾掉無效資料
         let displayData = employees.map(emp => {
             if (!emp || !emp.hireDate) return null;
             const periods = getPeriods(emp);
@@ -697,7 +682,6 @@
             else if (current.isSettled) wageHtml = `<span class="text-green-600 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs text-green-500">已發放</div>`;
             else wageHtml = `<span class="text-indigo-700 font-bold">$${settleAmount.toLocaleString()}</span> <div class="text-xs ${isExpired||isResigned ? 'text-red-500' : 'text-gray-400'}">待結算</div>`;
 
-            // 唯讀模式下的操作按鈕 (大大的查看明細) vs 管理員模式按鈕
             const actionBtns = window.isReadOnlyMode 
                 ? `<button onclick="openRecordModal('${emp.id}')" class="w-full text-indigo-700 bg-indigo-50 hover:bg-indigo-100 py-2 rounded-lg font-bold transition flex items-center justify-center"><i class="fas fa-search mr-2"></i>查看明細</button>`
                 : `<button onclick="openRecordModal('${emp.id}')" class="text-teal-600 hover:text-teal-800 bg-teal-50 p-2.5 rounded transition mr-1" title="紀錄與結算"><i class="fas fa-file-signature"></i></button>
@@ -711,6 +695,7 @@
                     ${emp.name} ${isResigned ? `<div class="text-xs text-red-500 mt-1"><i class="fas fa-ban"></i> 已離職</div>` : ''}
                 </td>
                 <td class="p-4 border-b border-gray-100 text-gray-600 text-sm">${emp.hireDate}</td>
+                <td class="p-4 border-b border-gray-100 text-indigo-600 font-mono text-sm">${emp.queryCode || '<span class="text-gray-300">未設定</span>'}</td>
                 <td class="p-4 border-b border-gray-100 text-indigo-700 font-medium">${current.name}</td>
                 <td class="p-4 border-b border-gray-100 text-sm">
                     <div class="text-gray-800">${current.start} ~ ${current.end}</div>
@@ -723,6 +708,7 @@
                 </td>
                 <td class="p-4 border-b border-gray-100 text-center admin-col ${window.isReadOnlyMode?'hidden':''}">${statusHtml}</td>
                 <td class="p-4 border-b border-gray-100 text-right admin-col ${window.isReadOnlyMode?'hidden':''}">${wageHtml}</td>
+                <td class="p-4 border-b border-gray-100 text-sm text-gray-500 max-w-[120px] truncate" title="${emp.remarks || ''}">${emp.remarks || '-'}</td>
                 <td class="p-4 border-b border-gray-100 text-center">${actionBtns}</td>
             `;
             tbody.appendChild(tr);
@@ -739,6 +725,7 @@
             document.getElementById('empQueryCode').value = emp.queryCode || '';
             document.getElementById('empHireDate').value = emp.hireDate;
             document.getElementById('empResignDate').value = emp.resignDate || '';
+            document.getElementById('empRemarks').value = emp.remarks || '';
             title.innerText = '編輯員工資料';
         } else {
             document.getElementById('employeeForm').reset();
@@ -759,9 +746,10 @@
         
         const id = document.getElementById('empId').value;
         const name = document.getElementById('empName').value;
-        const queryCode = document.getElementById('empQueryCode').value;
+        const queryCode = document.getElementById('empQueryCode').value.trim();
         const hireDate = document.getElementById('empHireDate').value;
         const resignDate = document.getElementById('empResignDate').value;
+        const remarks = document.getElementById('empRemarks').value;
 
         if (resignDate && new Date(resignDate) < new Date(hireDate)) {
             showToast("離職日不能早於到職日！", 'error'); return;
@@ -769,9 +757,9 @@
 
         if (id) {
             const emp = employees.find(e => e.id === id);
-            emp.name = name; emp.queryCode = queryCode; emp.hireDate = hireDate; emp.resignDate = resignDate;
+            emp.name = name; emp.queryCode = queryCode; emp.hireDate = hireDate; emp.resignDate = resignDate; emp.remarks = remarks;
         } else {
-            employees.push({ id: Date.now().toString(), name, queryCode, hireDate, resignDate, periodSettings: {}, leaves: [] });
+            employees.push({ id: Date.now().toString(), name, queryCode, hireDate, resignDate, remarks, periodSettings: {}, leaves: [] });
         }
         
         saveDataToCloud();
@@ -849,9 +837,7 @@
         const deferDesc = document.getElementById('deferDesc');
         const settlementCard = document.getElementById('settlementCard');
         
-        // ⭐️ 最核心的顯示邏輯區分 (唯讀老師 vs 園長)
         if (window.isReadOnlyMode) {
-            // 老師模式：純看狀態，隱藏開關與薪資
             deferToggleWrapper.classList.add('hidden');
             deferReadOnlyText.classList.remove('hidden');
             settlementCard.classList.add('hidden');
@@ -870,12 +856,11 @@
                 deferReadOnlyText.className = "text-sm font-bold px-3 py-1 rounded-full border bg-orange-50 text-orange-700 border-orange-200 mb-2 inline-block";
                 deferDesc.innerHTML = `本期未休畢之特休已遞延至下一年度。`;
             } else {
-                deferReadOnlyText.innerText = "尚未設定 (待結算/遞延)";
+                deferReadOnlyText.innerText = "本年度尚未啟用遞延";
                 deferReadOnlyText.className = "text-sm font-bold px-3 py-1 rounded-full border bg-gray-50 text-gray-600 border-gray-200 mb-2 inline-block";
                 deferDesc.innerHTML = `尚未啟用遞延，到期未休畢依法應結算工資。`;
             }
         } else {
-            // 園長模式：完整設定權限
             deferToggleWrapper.classList.remove('hidden');
             deferReadOnlyText.classList.add('hidden');
             settlementCard.classList.remove('hidden');
@@ -1071,7 +1056,6 @@
         link.click();
     };
     
-    // 初始化 UI 狀態
     updateUIAfterAuth();
 </script>
 </body>
